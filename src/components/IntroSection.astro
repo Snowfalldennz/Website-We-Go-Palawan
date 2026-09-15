@@ -1,0 +1,118 @@
+---
+import { Image } from 'astro:assets';
+import { photo } from '@/data/images';
+
+// Captions name the place in each photo, taken from the source file names in
+// Tours Only/, so a visitor can tell what they are looking at.
+const shots = [
+  {
+    mod: 'a',
+    src: photo('tours/el-nido/el-nido-tour-a/seven-commando-beach.png'),
+    name: 'Seven Commando Beach',
+    place: 'El Nido',
+    alt: 'Palm trees and white sand at Seven Commando Beach, El Nido',
+    sizes: '(min-width: 960px) 26vw, 45vw',
+    parallax: '0.1',
+  },
+  {
+    mod: 'b',
+    src: photo('tours/coron/coron-a/green-lagoon.jpg'),
+    name: 'Green Lagoon',
+    place: 'Coron',
+    alt: 'Kayaking on the clear green water of Green Lagoon, Coron',
+    sizes: '(min-width: 960px) 22vw, 40vw',
+    parallax: '0.16',
+  },
+];
+---
+
+<section class="intro section" data-bg="#ffffff" data-nav-theme="dark">
+  <div class="container grid-12">
+    <div class="intro__text" data-reveal-group>
+      <p class="eyebrow" data-reveal>Palawan, done properly</p>
+      <h2 class="display display-l" data-split>
+        Four destinations.<br />One island.<br />Days you will talk about for years.
+      </h2>
+      <p class="lede" data-reveal>
+        We are a local tour company based in Puerto Princesa. We run island hopping tours, van transfers and
+        complete packages across El Nido, Coron, Port Barton and the city, so you can plan the whole trip
+        with one person who actually lives here.
+      </p>
+      <a href="/tours" class="link-arrow" data-reveal>See all tours <span class="arrow">→</span></a>
+    </div>
+
+    <div class="intro__media">
+      {shots.map((s) => (
+        <figure class:list={['intro__fig', `intro__fig--${s.mod}`]}>
+          <span class="intro__frame media" data-reveal-img data-parallax={s.parallax}>
+            <Image src={s.src} alt={s.alt} widths={[400, 600, 900]} sizes={s.sizes} format="webp" quality={78} />
+          </span>
+          <figcaption class="intro__cap" data-reveal>
+            <span class="intro__cap-name">{s.name}</span>
+            <span class="intro__cap-place">{s.place}</span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .intro__text { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1.75rem; align-items: flex-start; }
+
+  /* Two columns with a real gap and a vertical stagger. The previous version
+     sized them 58% + 42% against each other, so they met edge to edge with no
+     gap and no overlap, which read as a mistake rather than a composition. */
+  .intro__media {
+    grid-column: 1 / -1;
+    margin-top: 3rem;
+    display: grid;
+    /* Equal columns on mobile: paired with the matching aspect ratio below,
+       this is what makes both captions land on the same line. The uneven
+       split is a desktop-only move, restored once the stagger is back. */
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(0.9rem, 2vw, 1.75rem);
+    align-items: start;
+  }
+
+  /* On narrow screens the two columns sit close together, so a stagger or a
+     mismatched aspect ratio reads as misaligned rather than composed — both
+     images share the same top edge and shape here, and their captions land
+     on the same line. The offset, editorial pairing is a desktop-only move,
+     reintroduced below once there is enough width for it to read as one. */
+  .intro__fig { margin: 0; display: flex; flex-direction: column; }
+  .intro__fig--b { margin-top: 0; }
+
+  .intro__frame { display: block; width: 100%; }
+  .intro__frame { aspect-ratio: 4 / 5; }
+
+  /* Parallax shifts the image inside its frame, so it has to be taller than
+     the frame or the shift would expose an empty edge. Positioned rather than
+     margined: a percentage margin resolves against the container's *width*,
+     which left uneven headroom top and bottom. Absolute offsets resolve
+     against its height, so the 12% spare is even on both sides. That covers
+     any data-parallax strength up to about 0.19. */
+  .intro__frame img { position: absolute; left: 0; top: -12%; width: 100%; height: 124%; }
+
+  .intro__cap { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.2rem; }
+  .intro__cap-name {
+    font-size: clamp(0.8rem, 0.95vw, 0.92rem);
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .intro__cap-place {
+    font-size: 0.66rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ocean);
+  }
+
+  @media (min-width: 960px) {
+    .intro__text { grid-column: 1 / 7; padding-right: 2rem; }
+    .intro__media { grid-column: 7 / -1; margin-top: 0; grid-template-columns: 1.08fr 0.92fr; }
+    .intro__fig--b { margin-top: 30%; }
+    .intro__fig--b .intro__frame { aspect-ratio: 1 / 1; }
+  }
+</style>

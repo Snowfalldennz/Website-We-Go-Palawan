@@ -1,0 +1,377 @@
+---
+/**
+ * Full-screen, scroll-controlled cinematic hero. The hero is 500vh tall; a
+ * 100vh stage stays pinned while scroll progress drives video.currentTime
+ * through the scenes in the footage.
+ *
+ * Chapter windows are fractions of scroll progress, which maps 1:1 onto the
+ * 20.97s video. They are set to the scene boundaries in the footage:
+ *   sandbar 2.7-5.8s · lagoon 6.0-12.9s · Underground River 13.0-16.8s ·
+ *   sunset 17.0s+
+ * Each window is inset slightly from the actual cut so a chapter's fade-in
+ * and fade-out (each ~1s, see the tick() below) land fully inside its own
+ * scene rather than bleeding into the one next to it.
+ */
+const chapters = [
+  { id: 'port-barton', start: 0.135, end: 0.267, label: 'Port Barton', lines: ['Island Hopping w/ Drone and Underwater shots.'], align: 'left' },
+  { id: 'coron', start: 0.3, end: 0.596, label: 'Coron', lines: ['Crystal-clear lakes.', 'Ancient limestone.', 'Unforgettable views.'], align: 'right' },
+  { id: 'puerto-princesa', start: 0.634, end: 0.787, label: 'Puerto Princesa', lines: ['Underground river, 7 Wonder of the world'], align: 'left' },
+  { id: 'palawan', start: 0.84, end: 1.0, label: '', lines: ['Explore more.', 'Experience more.', 'Remember <span class="hero__accent">forever</span>.'], align: 'center' },
+];
+---
+
+<section class="hero" data-hero data-bg="#071a24" data-nav-theme="light" aria-label="Palawan cinematic introduction">
+  <div class="hero__stage">
+    <picture class="hero__poster">
+      <!-- Matches the JS source rule below: taller than 9:16 gets the portrait cut. -->
+      <source media="(max-aspect-ratio: 608 / 1080)" srcset="/video/hero-poster-portrait.jpg" />
+      <img
+        src="/video/hero-poster.jpg"
+        width="1920"
+        height="1080"
+        alt="Snorkelers swimming over a shallow reef in clear turquoise water, Palawan"
+        fetchpriority="high"
+        decoding="async"
+      />
+    </picture>
+    <video
+      class="hero__video"
+      muted
+      playsinline
+      preload="none"
+      disablepictureinpicture
+      aria-hidden="true"
+      tabindex="-1"
+      data-src-landscape="/video/hero-scrub.mp4"
+      data-src-landscape-sm="/video/hero-scrub-landscape-sm.mp4"
+      data-src-portrait="/video/hero-scrub-portrait.mp4"
+    ></video>
+
+    <div class="hero__shade" aria-hidden="true"></div>
+
+    <!-- Opening -->
+    <div class="hero__opening" data-chapter data-start="0" data-end="0.13" data-opening>
+      <div class="container">
+        <h1 class="hero__title hero__title--tagline display" data-split="load">EXPLORE THE<br />PHILIPPINES&#39;<br />LAST FRONTIER</h1>
+        <p class="hero__sub" data-reveal="0.55">Tours, island adventures and unforgettable escapes.</p>
+        <div class="hero__ctas" data-reveal="0.72">
+          <a href="/#destinations" class="btn">Explore Palawan</a>
+          <a href="/tours" class="btn btn-ghost">View tours</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll storytelling chapters -->
+    {chapters.map((c) => (
+      <div
+        class:list={['hero__chapter', `hero__chapter--${c.align}`]}
+        data-chapter
+        data-start={c.start}
+        data-end={c.end}
+        aria-hidden="true"
+      >
+        <div class="container">
+          {c.label && <p class="hero__label">{c.label}</p>}
+          <p class="hero__lines">
+            {c.lines.map((l) => <span set:html={l} />)}
+          </p>
+        </div>
+      </div>
+    ))}
+
+    <div class="hero__hint" data-hero-hint aria-hidden="true">
+      <span class="hero__hint-line"></span>
+      <span>Scroll</span>
+    </div>
+
+    <div class="hero__progress" aria-hidden="true"><span data-hero-progress></span></div>
+
+    <!-- Dissolves the whole stage into the section below at the end of the scroll. -->
+    <div class="hero__out" data-hero-out aria-hidden="true"></div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    height: 500vh;
+    background: var(--navy);
+    color: var(--white);
+  }
+  .reduced-motion .hero { height: 100vh; height: 100svh; }
+
+  .hero__stage {
+    position: sticky; top: 0;
+    height: 100vh; height: 100svh;
+    overflow: hidden;
+  }
+  .hero__poster, .hero__video { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero__poster img, .hero__video { width: 100%; height: 100%; object-fit: cover; }
+  .hero__video { opacity: 0; transition: opacity 1.2s var(--ease-out); }
+  .hero__video.is-ready { opacity: 1; }
+
+  /* Subtle shade only where text sits — never a block behind the copy. */
+  .hero__shade {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(to bottom, rgba(7,26,36,.42) 0%, rgba(7,26,36,0) 28%),
+      linear-gradient(to top, rgba(7,26,36,.55) 0%, rgba(7,26,36,0) 48%);
+  }
+
+  .hero__opening, .hero__chapter {
+    position: absolute; inset: 0; display: flex; align-items: flex-end;
+    padding-bottom: clamp(3rem, 9vh, 7rem);
+    will-change: opacity, transform;
+  }
+  .hero__chapter { opacity: 0; pointer-events: none; }
+
+  .hero__title { margin-bottom: 1.25rem; }
+  /* Longer 5-word tagline: sized down from display-xl (built for a short
+     2-word wordmark) so the longest line ("PHILIPPINES'") never overflows
+     on narrow phones, while still reading as a bold hero statement on
+     desktop. Inherits tracking/line-height/balance from .display. */
+  .hero__title--tagline { font-size: clamp(1.85rem, 6vw, 5.25rem); font-weight: 600; }
+  .hero__sub { font-size: clamp(1.05rem, 1.5vw, 1.35rem); font-weight: 500; opacity: .9; margin-bottom: 2rem; }
+  .hero__ctas { display: flex; flex-wrap: wrap; gap: .75rem; }
+
+  .hero__label {
+    font-size: .74rem; letter-spacing: .3em; text-transform: uppercase; font-weight: 700;
+    color: var(--turquoise); margin-bottom: 1rem;
+  }
+  .hero__lines {
+    display: flex; flex-direction: column;
+    font-size: clamp(2rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -.035em; line-height: 1.05;
+    text-shadow: 0 2px 30px rgba(7,26,36,.25);
+  }
+  /* :global() because this span is injected via set:html (see the chapters
+     render loop below), so it never receives Astro's scoped-style attribute. */
+  :global(.hero__accent) { color: var(--gold-bright); }
+  .hero__chapter--right .container { text-align: right; }
+  /* True vertical centering (align-items: center) put this over the sun and
+     mountain silhouette; the other chapters' near-bottom baseline put it too
+     close to the bottom edge, with a big gap of plain water above it. This
+     splits the difference: pinned to the calm water in the lower half of the
+     frame, clear of the horizon, without hugging the very bottom. Percentage
+     padding-top would resolve against width, not height, on a flex
+     container, so vh is used instead. */
+  .hero__chapter--center { align-items: flex-start; padding-top: 58vh; }
+  .hero__chapter--center .container { text-align: center; }
+  .hero__chapter--center .hero__lines { align-items: center; }
+
+  .hero__hint {
+    position: absolute; right: var(--gutter); bottom: 2.25rem;
+    display: flex; align-items: center; gap: .9rem;
+    font-size: .68rem; letter-spacing: .28em; text-transform: uppercase; font-weight: 600; opacity: .8;
+    transition: opacity .6s;
+  }
+  .hero__hint-line { width: 1px; height: 44px; background: rgba(255,255,255,.6); overflow: hidden; position: relative; }
+  .hero__hint-line::after {
+    content: ''; position: absolute; inset: 0; background: var(--white);
+    animation: hint 2.2s var(--ease-in-out) infinite;
+  }
+  @keyframes hint { 0% { transform: translateY(-100%); } 60% { transform: translateY(100%); } 100% { transform: translateY(100%); } }
+
+  .hero__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.12); }
+  .hero__progress span { display: block; height: 100%; width: 100%; background: var(--turquoise); transform: scaleX(0); transform-origin: left; }
+
+  .hero__out {
+    position: absolute; inset: 0; pointer-events: none;
+    background: var(--white);
+    opacity: 0;
+  }
+
+  .reduced-motion .hero__hint, .reduced-motion .hero__progress, .reduced-motion .hero__chapter { display: none; }
+  .reduced-motion .hero__out { display: none; }
+
+  @media (max-width: 720px) {
+    .hero { height: 420vh; }
+    .hero__hint { display: none; }
+    .hero__chapter--right .container { text-align: left; }
+  }
+</style>
+
+<script>
+  import { gsap, ScrollTrigger, reducedMotion, onPage, onLeave } from '@/scripts/motion';
+
+  onPage(() => {
+    const hero = document.querySelector<HTMLElement>('[data-hero]');
+    if (!hero || reducedMotion) return;
+
+    const video = hero.querySelector<HTMLVideoElement>('video')!;
+    const poster = hero.querySelector<HTMLElement>('.hero__poster')!;
+    const hint = hero.querySelector<HTMLElement>('[data-hero-hint]');
+    const bar = hero.querySelector<HTMLElement>('[data-hero-progress]');
+    const out = hero.querySelector<HTMLElement>('[data-hero-out]');
+    const chapters = [...hero.querySelectorAll<HTMLElement>('[data-chapter]')].map((el) => ({
+      el,
+      start: parseFloat(el.dataset.start!),
+      end: parseFloat(el.dataset.end!),
+      opening: 'opening' in el.dataset,
+      lastOpacity: -1,
+    }));
+
+    /* ---------- scroll progress ---------- */
+    let target = 0; // where the scroll says we should be (0..1)
+    let current = 0; // smoothed value actually applied
+    ScrollTrigger.create({
+      trigger: hero,
+      start: 'top top',
+      end: 'bottom bottom',
+      onUpdate: (self) => { target = self.progress; },
+    });
+
+    /* ---------- video loading ---------- */
+    let duration = 0;
+    let ready = false;
+    let lastSeekAt = 0;
+    let seekStarted = 0;
+    let seekLatency = 0; // rolling average, ms — used to adapt seek cadence
+
+    // The hero fills the screen with object-fit:cover, so what matters for
+    // sharpness is how many source pixels survive the crop. Every cut is 1080
+    // tall, so a phone in portrait sees the same detail from the 9:16 file as
+    // from the full frame — it just downloads less than half as much. Above
+    // that aspect the 9:16 cut would have to be stretched sideways, so wider
+    // viewports take a landscape file instead.
+    const PORTRAIT_MAX_ASPECT = 608 / 1080;
+    const pickSrc = () => {
+      const { innerWidth: w, innerHeight: h } = window;
+      const aspect = w / h;
+      if (aspect < PORTRAIT_MAX_ASPECT) return video.dataset.srcPortrait!;
+      if (aspect > 1 && w < 1000) return video.dataset.srcLandscapeSm!;
+      return video.dataset.srcLandscape!;
+    };
+
+    let loadedSrc = '';
+    let objectUrl = '';
+
+    // Fetch the whole file first so scrubbing never waits on the network,
+    // then hand it to the <video> as a blob URL.
+    const load = async (src: string) => {
+      if (src === loadedSrc) return;
+      loadedSrc = src;
+      const previous = objectUrl;
+      try {
+        const res = await fetch(src);
+        if (!res.ok) throw new Error(String(res.status));
+        const blob = await res.blob();
+        if (loadedSrc !== src) return; // a rotation overtook this load
+        objectUrl = URL.createObjectURL(blob);
+        video.src = objectUrl;
+      } catch {
+        // Network trouble: stream it directly instead.
+        objectUrl = '';
+        video.src = src;
+        video.preload = 'auto';
+      }
+      video.load();
+      if (previous) URL.revokeObjectURL(previous);
+    };
+
+    video.addEventListener('loadedmetadata', () => { duration = video.duration; });
+    video.addEventListener('loadeddata', async () => {
+      // iOS renders nothing until the element has "played" once.
+      try { await video.play(); video.pause(); } catch { /* fine */ }
+      video.currentTime = Math.max(0.001, current * duration);
+      ready = true;
+      if (!video.classList.contains('is-ready')) {
+        video.classList.add('is-ready');
+        poster.style.transition = 'opacity 1.2s';
+        setTimeout(() => (poster.style.opacity = '0'), 400);
+      }
+    });
+    video.addEventListener('seeked', () => {
+      const ms = performance.now() - seekStarted;
+      seekLatency = seekLatency ? seekLatency * 0.8 + ms * 0.2 : ms;
+    });
+    video.addEventListener('error', () => { ready = false; });
+
+    const loadBest = () => load(pickSrc());
+    if ('requestIdleCallback' in window) (window as any).requestIdleCallback(() => loadBest(), { timeout: 800 });
+    else setTimeout(loadBest, 120);
+
+    // Rotating the phone changes which cut fits. Swap only when the choice
+    // actually differs, and keep the frame the scroll position is asking for.
+    let rotateTimer = 0;
+    window.addEventListener('resize', () => {
+      clearTimeout(rotateTimer);
+      rotateTimer = window.setTimeout(loadBest, 250);
+    });
+
+    /* ---------- per-frame update ---------- */
+    const SEEK_STEP = 1 / 30; // don't bother seeking for sub-frame differences
+
+    let ticks = 0;
+    let onScreen = true;
+    const tick = (_time: number, deltaMs: number) => {
+      ticks++;
+      // Smooth toward target so wheel steps feel like camera moves, not jumps.
+      // Time-based so the feel is identical at 60 or 120 Hz.
+      const k = 1 - Math.exp(-(deltaMs / 1000) * 7);
+      current += (target - current) * k;
+      if (Math.abs(target - current) < 0.0005) current = target;
+
+      if (ready && duration && onScreen) {
+        const t = Math.min(duration - 0.05, Math.max(0, current * duration));
+        const now = performance.now();
+        // Setting currentTime while a seek is in flight simply replaces it, so we
+        // never wait on `seeked`; we just avoid hammering slow decoders.
+        const minGap = Math.min(120, Math.max(0, seekLatency * 0.5));
+        if (Math.abs(video.currentTime - t) >= SEEK_STEP && now - lastSeekAt >= minGap) {
+          lastSeekAt = now;
+          seekStarted = now;
+          video.currentTime = t;
+        }
+      }
+
+      for (const c of chapters) {
+        const fadeIn = c.opening ? 0 : 0.05;
+        const fadeOut = 0.05;
+        let o: number;
+        if (current < c.start || current > c.end) o = 0;
+        else if (current < c.start + fadeIn) o = (current - c.start) / fadeIn;
+        else if (current > c.end - fadeOut) o = (c.end - current) / fadeOut;
+        else o = 1;
+        if (c.end >= 1 && current >= c.end - fadeOut) o = 1; // last chapter stays visible
+        o = Math.max(0, Math.min(1, o));
+        if (o !== c.lastOpacity) {
+          c.lastOpacity = o;
+          const y = (1 - o) * (c.opening ? 0 : 24);
+          c.el.style.opacity = String(o);
+          c.el.style.transform = `translate3d(0, ${y}px, 0)`;
+          c.el.style.pointerEvents = o > 0.5 ? 'auto' : 'none';
+        }
+      }
+
+      if (bar) bar.style.transform = `scaleX(${current})`;
+      if (hint) hint.style.opacity = current > 0.03 ? '0' : '0.8';
+
+      // Hand off to the page below: the last stretch of the hero dissolves to
+      // the next section's colour instead of the video sliding away.
+      if (out) {
+        const from = 0.93;
+        const o = current <= from ? 0 : Math.min(1, (current - from) / (1 - from));
+        out.style.opacity = String(o);
+      }
+    };
+
+    // The loop always runs, so scroll position, chapter text and the hand-off
+    // stay in sync no matter what. Only the expensive part is gated: seeking a
+    // paused video decodes frames, and there is no point paying for that while
+    // the hero is off screen. Gating the whole loop instead would risk leaving
+    // the hero frozen if the observer ever missed its first callback.
+    gsap.ticker.add(tick);
+    const io = new IntersectionObserver(([entry]) => { onScreen = entry.isIntersecting; });
+    io.observe(hero);
+
+    onLeave(() => {
+      io.disconnect();
+      gsap.ticker.remove(tick);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    });
+
+    if (import.meta.env.DEV) {
+      (window as any).__hero = { get target() { return target; }, get current() { return current; }, get seekLatency() { return seekLatency; }, get ticks() { return ticks; }, video };
+    }
+  });
+</script>

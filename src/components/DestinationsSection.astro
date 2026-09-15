@@ -1,0 +1,65 @@
+---
+import { Image } from 'astro:assets';
+import { destinations } from '@/data/destinations';
+import { photo } from '@/data/images';
+
+const layout: Record<string, { cls: string; widths: number[]; sizes: string }> = {
+  'el-nido': { cls: 'dest--a', widths: [640, 960, 1280, 1800], sizes: '(min-width: 960px) 62vw, 100vw' },
+  'puerto-princesa': { cls: 'dest--b', widths: [480, 720, 960, 1280], sizes: '(min-width: 960px) 30vw, 100vw' },
+  'port-barton': { cls: 'dest--c', widths: [640, 960, 1280, 1800], sizes: '(min-width: 960px) 54vw, 100vw' },
+  coron: { cls: 'dest--d', widths: [480, 720, 960, 1280], sizes: '(min-width: 960px) 38vw, 100vw' },
+};
+---
+
+<section class="dests section" data-bg="#ffffff" id="destinations" data-nav-theme="dark">
+  <div class="container">
+    <header class="dests__head" data-reveal-group>
+      <p class="eyebrow" data-reveal>Destinations</p>
+      <h2 class="display display-l" data-split>Choose your dream</h2>
+    </header>
+
+    <div class="dests__grid">
+      {destinations.map((d) => {
+        const l = layout[d.slug];
+        return (
+          <a href={`/destinations/${d.slug}`} class:list={['dest', l.cls]}>
+            <figure class="dest__media media zoom-hover" data-reveal-img data-parallax="0.1" transition:name={`dest-${d.slug}`}>
+              <Image src={photo(d.cover)} alt={`${d.name}, Palawan`} widths={l.widths} sizes={l.sizes} format="webp" quality={78} />
+            </figure>
+            <div class="dest__caption" data-reveal-group>
+              <h3 class="dest__name display display-m" data-reveal>{d.name}</h3>
+              <p class="dest__short" data-reveal>{d.short}</p>
+              <span class="link-arrow dest__link" data-reveal>Explore destination <span class="arrow">→</span></span>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<style>
+  .dests__head { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: clamp(3rem, 6vw, 5rem); }
+  .dests__head .display { max-width: 14ch; }
+
+  .dests__grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(3rem, 6vw, 6rem) clamp(1rem, 2.5vw, 2.5rem); }
+  .dest { grid-column: 1 / -1; display: block; }
+  .dest__media { margin: 0; }
+  .dest__media img { aspect-ratio: 4 / 3; }
+  .dest__caption { display: flex; flex-direction: column; gap: .5rem; margin-top: 1.5rem; align-items: flex-start; }
+  .dest__short { color: var(--ink-2); max-width: 34ch; text-wrap: pretty; }
+  .dest__link { margin-top: .5rem; color: var(--navy); }
+  .dest:hover .dest__link .arrow { transform: translateX(6px); }
+
+  @media (min-width: 960px) {
+    /* Explicit rows: the data order is El Nido, Puerto Princesa, Port Barton, Coron. */
+    .dest--a { grid-column: 1 / 9; grid-row: 1; }
+    .dest--a .dest__media img { aspect-ratio: 16 / 10; }
+    .dest--b { grid-column: 9 / -1; grid-row: 1; margin-top: 24%; }
+    .dest--b .dest__media img { aspect-ratio: 3 / 4; }
+    .dest--c { grid-column: 1 / 8; grid-row: 2; margin-top: -6%; }
+    .dest--c .dest__media img { aspect-ratio: 16 / 10; }
+    .dest--d { grid-column: 8 / -1; grid-row: 2; margin-top: 16%; }
+    .dest--d .dest__media img { aspect-ratio: 4 / 5; }
+  }
+</style>

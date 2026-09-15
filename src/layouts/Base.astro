@@ -1,0 +1,109 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '@/styles/global.css';
+import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
+import { site } from '@/data/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Nav appearance when at the very top of the page. */
+  navTheme?: 'light' | 'dark';
+  /** Whether the nav starts transparent (over a hero) or solid. */
+  navTransparent?: boolean;
+  ogImage?: string;
+  /**
+   * Opt-in for the scroll-driven page background (see motion.ts). Only pages
+   * whose every section — top to bottom — declares its own `data-bg` should
+   * set this, since the driver treats the first `data-bg` section as the
+   * page's starting colour, applied immediately regardless of scroll
+   * position. Every page carries a `data-bg` on the shared FinalCTA and
+   * Footer near the bottom, which is correct for the homepage but would
+   * wrongly paint the *entire* page navy on a page whose real content
+   * sections don't otherwise define a colour of their own.
+   */
+  bgDriven?: boolean;
+}
+
+const {
+  title,
+  description = site.description,
+  navTheme = 'light',
+  navTransparent = true,
+  ogImage = '/video/hero-poster.jpg',
+  bgDriven = false,
+} = Astro.props;
+
+const fullTitle = title ? `${title} — ${site.name}` : `${site.name} — ${site.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+
+// Sitewide TravelAgency structured data (schema.org). This is what tells
+// Google (and anything reading rich results, like Maps/Business Profile
+// matching) that this is a real, locatable local business, not just a page
+// of text — separate from the on-page description meant for humans.
+// addressLocality/addressRegion are written out explicitly rather than
+// parsed from site.location, so keep them in sync if that ever changes.
+const businessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'TravelAgency',
+  name: site.name,
+  description: site.description,
+  url: Astro.site?.toString(),
+  telephone: site.phoneIntl,
+  ...(site.email ? { email: site.email } : {}),
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Puerto Princesa City',
+    addressRegion: 'Palawan',
+    addressCountry: 'PH',
+  },
+  areaServed: ['El Nido', 'Coron', 'Port Barton', 'Puerto Princesa'],
+  image: new URL('/video/hero-poster.jpg', Astro.site).toString(),
+  ...(site.facebookUrl ? { sameAs: [site.facebookUrl] } : {}),
+};
+---
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#071a24" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(ogImage, Astro.site)} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+    />
+    <script is:inline>
+      document.documentElement.classList.remove('no-js');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('reduced-motion');
+      }
+    </script>
+    <script type="application/ld+json" set:html={JSON.stringify(businessSchema)} />
+    <ClientRouter />
+    <slot name="head" />
+  </head>
+  <body data-bg-page={bgDriven ? 'true' : undefined}>
+    <Navbar theme={navTheme} transparent={navTransparent} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      import '@/scripts/motion';
+    </script>
+  </body>
+</html>

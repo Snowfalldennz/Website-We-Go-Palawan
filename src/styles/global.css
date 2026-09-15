@@ -1,0 +1,220 @@
+/* ==========================================================================
+   WE GO PALAWAN — design system
+   Photography first. Dark navy, white and an ocean-blue accent, tuned to the
+   hue of the logo's sky blue. A muted gold — a toned-down version of the
+   logo's yellow, dark enough for text, bright enough for a fill on navy —
+   marks the moments that matter: prices, and the one accent button. Large
+   editorial type.
+   ========================================================================== */
+
+:root {
+  --navy: #071a24;
+  --navy-2: #0b2430;
+  --ocean: #0e6590; /* nudged a few degrees toward the logo's blue hue (~204°); same saturation/lightness, so nothing got brighter */
+  --turquoise: #20c4c7; /* kept as-is: matches actual lagoon-water photography and the logo's small teal icon detail */
+  --gold: #96661d; /* muted bronze-gold — logo's yellow, darkened for legible text on white/off-white */
+  --gold-bright: #d9a82e; /* the same gold, opened up — for the one accent fill that sits on navy */
+  /* True, undarkened logo colors — sampled directly from the source logo file
+     (Tours Only/Logo.jpg), not toned down. Reserved for the "WE GO PALAWAN"
+     wordmark itself, so it reads as the actual brand mark; everything else
+     keeps the muted --gold/--ocean above so the rest of the site stays calm. */
+  --logo-yellow: #fff30e;
+  --logo-blue: #1096f7;
+  --sand: #f4e5c3;
+  --white: #ffffff;
+  --off-white: #f6f4ef;
+  --ink: #0f1a20;
+  --ink-2: #3d4b53;
+  --ink-3: #7b8790;
+  --line: rgba(7, 26, 36, 0.12);
+  --line-light: rgba(255, 255, 255, 0.16);
+
+  --font-sans: 'Manrope', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur: 0.9s;
+
+  --gutter: clamp(1.25rem, 4vw, 4rem);
+  --max: 1560px;
+  --nav-h: 76px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: auto; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+img, video, picture { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+h1, h2, h3, h4, p { margin: 0; }
+:focus-visible { outline: 2px solid var(--turquoise); outline-offset: 4px; }
+
+::selection { background: var(--turquoise); color: var(--navy); }
+
+/* ---------- Typography ---------- */
+.eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ocean);
+}
+.dark .eyebrow, [data-theme='dark'] .eyebrow { color: var(--turquoise); }
+
+.display {
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+.display-xl { font-size: clamp(3rem, 9vw, 9rem); font-weight: 600; letter-spacing: -0.045em; }
+.display-l  { font-size: clamp(2.5rem, 6vw, 5.5rem); }
+.display-m  { font-size: clamp(2rem, 4vw, 3.75rem); }
+.display-s  { font-size: clamp(1.5rem, 2.6vw, 2.25rem); letter-spacing: -0.025em; line-height: 1.1; }
+
+.lede { font-size: clamp(1.05rem, 1.4vw, 1.35rem); line-height: 1.55; color: var(--ink-2); max-width: 36ch; text-wrap: pretty; }
+.dark .lede { color: rgba(255, 255, 255, 0.78); }
+.muted { color: var(--ink-3); }
+.dark .muted { color: rgba(255,255,255,.55); }
+
+/* ---------- Layout ---------- */
+.container { width: min(100% - 2 * var(--gutter), var(--max)); margin-inline: auto; }
+.section { padding-block: clamp(5rem, 11vw, 11rem); }
+.section-tight { padding-block: clamp(3.5rem, 7vw, 7rem); }
+.dark { background: var(--navy); color: var(--white); }
+.off { background: var(--off-white); }
+
+.grid-12 { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: clamp(1rem, 2vw, 2rem); }
+
+/* ---------- Buttons ---------- */
+.btn {
+  --btn-bg: var(--white);
+  --btn-fg: var(--navy);
+  display: inline-flex; align-items: center; gap: 0.75rem;
+  padding: 1.05rem 1.75rem;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  background: var(--btn-bg); color: var(--btn-fg);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: background .4s var(--ease-out), color .4s var(--ease-out), transform .5s var(--ease-out), border-color .4s;
+  will-change: transform;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-dark { --btn-bg: var(--navy); --btn-fg: var(--white); }
+.btn-dark:hover { background: var(--ocean); }
+.btn-accent { --btn-bg: var(--gold-bright); --btn-fg: var(--navy); }
+.btn-accent:hover { background: #dfb753; }
+.btn-ghost { --btn-bg: transparent; --btn-fg: var(--white); border-color: rgba(255,255,255,.45); }
+.btn-ghost:hover { background: rgba(255,255,255,.1); border-color: var(--white); }
+.btn-ghost-dark { --btn-bg: transparent; --btn-fg: var(--navy); border-color: var(--line); }
+.btn-ghost-dark:hover { border-color: var(--navy); }
+
+.link-arrow {
+  display: inline-flex; align-items: center; gap: .6rem;
+  font-size: .78rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+}
+.link-arrow .arrow { display: inline-block; transition: transform .5s var(--ease-out); }
+.link-arrow:hover .arrow { transform: translateX(6px); }
+
+/* ---------- Media ---------- */
+.media { position: relative; overflow: hidden; background: var(--navy-2); }
+.media img, .media video { width: 100%; height: 100%; object-fit: cover; }
+.media-parallax img { height: 130%; width: 100%; will-change: transform; }
+.zoom-hover img { transition: transform 1.6s var(--ease-out); }
+.zoom-hover:hover img { transform: scale(1.05); }
+
+/* ---------- Reveal (progressively enhanced by GSAP) ---------- */
+[data-reveal] { opacity: 0; transform: translateY(28px); }
+[data-reveal-img] { clip-path: inset(0 0 100% 0); }
+[data-reveal-img] img { transform: scale(1.12); }
+.no-js [data-reveal], .reduced-motion [data-reveal] { opacity: 1; transform: none; }
+.no-js [data-reveal-img], .reduced-motion [data-reveal-img] { clip-path: none; }
+.no-js [data-reveal-img] img, .reduced-motion [data-reveal-img] img { transform: none; }
+
+/* ---------- Details / dividers ---------- */
+.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.dark .rule { border-color: var(--line-light); }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* ---------- Horizontal scroller (native, snap) ---------- */
+.hscroll {
+  display: flex; gap: clamp(.75rem, 1.5vw, 1.5rem);
+  overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter);
+  padding-inline: var(--gutter); padding-bottom: .5rem;
+  scrollbar-width: none;
+}
+.hscroll::-webkit-scrollbar { display: none; }
+.hscroll > * { scroll-snap-align: start; flex: 0 0 auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ==========================================================================
+   Split-line reveal
+   Headlines are rebuilt into one clipping span per rendered line so each can
+   rise from behind its own mask. Hidden until the script has measured them,
+   so there is no flash of un-split text; visible again without JS.
+   ========================================================================== */
+[data-split] { opacity: 0; }
+.no-js [data-split], .reduced-motion [data-split] { opacity: 1; }
+.sl-line {
+  display: block;
+  overflow: hidden;
+  /* Descenders would be clipped by the mask, so give them room and take it
+     back off the layout. */
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.sl-inner { display: block; will-change: transform; }
+
+/* ==========================================================================
+   Scroll-driven page background
+   Sections keep their own colour as the no-JS fallback. Once the driver is
+   running the body carries the colour instead, so section boundaries can
+   cross-fade in the whitespace between them rather than cutting hard.
+   ========================================================================== */
+.bg-driven .dark,
+.bg-driven .off { background: transparent; }
+
+/* ==========================================================================
+   View transitions
+   Navigation is a camera move, not a page load. The page itself cross-fades
+   quickly; any element sharing a transition:name across the two pages travels
+   between its old and new position, which is slower so the eye can follow it.
+   ========================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(*) {
+    animation-duration: 0.72s;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.42s;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}

@@ -1,0 +1,58 @@
+---
+import { Image } from 'astro:assets';
+import type { Tour } from '@/data/tours';
+import { peso } from '@/data/tours';
+import { destinationBySlug } from '@/data/destinations';
+import { photo } from '@/data/images';
+
+interface Props { tour: Tour; dark?: boolean; sizes?: string; eager?: boolean; }
+const { tour, dark = false, sizes = '(min-width: 960px) 30vw, 80vw', eager = false } = Astro.props;
+const dest = destinationBySlug(tour.destination);
+---
+
+<a href={`/tours/${tour.slug}`} class:list={['tcard', { 'tcard--dark': dark }]}>
+  <figure class="tcard__media media zoom-hover" transition:name={`tour-${tour.slug}`}>
+    <Image
+      src={photo(tour.hero)}
+      alt={`${tour.name} — ${tour.stops[0]?.name ?? dest.name}`}
+      widths={[420, 640, 900, 1200]}
+      sizes={sizes}
+      format="webp"
+      quality={76}
+      loading={eager ? 'eager' : 'lazy'}
+    />
+  </figure>
+  <div class="tcard__body">
+    <h3 class="tcard__name">{tour.name}</h3>
+    <p class="tcard__tag">{tour.tagline}</p>
+    <p class="tcard__price">
+      {tour.price ? (
+        <>
+          <span class="tcard__promo">{peso(tour.price.promo)}</span>
+          <span class="tcard__orig">{peso(tour.price.original)}</span>
+          <span class="tcard__per">per person</span>
+        </>
+      ) : (
+        <span class="tcard__per">{tour.priceNote ?? 'Ask for rates'}</span>
+      )}
+    </p>
+    <span class="link-arrow tcard__link">View details <span class="arrow">→</span></span>
+  </div>
+</a>
+
+<style>
+  .tcard { display: block; color: var(--ink); }
+  .tcard--dark { color: var(--white); }
+  .tcard__media { margin: 0; }
+  .tcard__media img { aspect-ratio: 4 / 5; }
+  .tcard__body { padding-top: 1.25rem; display: flex; flex-direction: column; gap: .4rem; }
+  .tcard__name { font-size: 1.35rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+  .tcard__tag { color: var(--ink-2); }
+  .tcard--dark .tcard__tag { color: rgba(255,255,255,.7); }
+  .tcard__price { display: flex; align-items: baseline; gap: .6rem; margin-top: .35rem; }
+  .tcard__promo { font-weight: 700; font-size: 1.1rem; color: var(--gold); }
+  .tcard--dark .tcard__promo { color: var(--gold-bright); }
+  .tcard__orig { text-decoration: line-through; opacity: .5; font-size: .9rem; }
+  .tcard__per { font-size: .8rem; opacity: .65; }
+  .tcard__link { margin-top: .6rem; font-size: .72rem; }
+</style>

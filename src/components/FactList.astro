@@ -1,0 +1,20 @@
+---
+interface Props { title: string; items: string[]; tone?: 'yes' | 'no' | 'neutral'; }
+const { title, items, tone = 'neutral' } = Astro.props;
+---
+
+<div class:list={['facts', `facts--${tone}`]}>
+  <h3 class="facts__title">{title}</h3>
+  <ul class="facts__list">
+    {items.map((i) => <li>{i}</li>)}
+  </ul>
+</div>
+
+<style>
+  .facts__title { font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 700; color: var(--ocean); margin-bottom: 1rem; }
+  .facts--no .facts__title { color: var(--ink-3); }
+  .facts__list { display: flex; flex-direction: column; }
+  .facts__list li { padding: .8rem 0; border-top: 1px solid var(--line); color: var(--ink-2); }
+  .facts__list li:last-child { border-bottom: 1px solid var(--line); }
+  .facts--yes .facts__list li { color: var(--ink); }
+</style>

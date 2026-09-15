@@ -1,0 +1,60 @@
+---
+import { Image } from 'astro:assets';
+import { photo } from '@/data/images';
+import { site } from '@/data/site';
+
+const points = [
+  { title: 'Local Palawan expertise', text: 'We are based in Puerto Princesa and run these routes every week. We know which lagoon is quiet at 9 AM and which pier the ferry actually leaves from.' },
+  { title: 'Easy booking', text: 'Message us with your dates and group size. We confirm availability, you pay a small reservation fee, and the rest is settled on the day.' },
+  { title: 'Complete travel assistance', text: 'From the moment you land to the moment you fly out. Pick-ups, timings, permits and the small questions in between.' },
+  { title: 'Tours and transfers, together', text: 'The van to El Nido, the boat the next morning and the ride back to the airport are planned by the same people, so nothing falls through the gaps.' },
+  { title: 'Accommodation assistance', text: 'Clean, air-conditioned rooms with breakfast, in town and near the beach. Bundled into a package or arranged on their own.' },
+  { title: 'Weather promise', text: 'If a tour is cancelled because of weather, we give a full refund.' },
+];
+const img = photo('tours/el-nido/el-nido-tour-a/payong-payong-beach.png');
+---
+
+<section class="why section dark" data-bg="#071a24" id="about" data-nav-theme="light">
+  <div class="container grid-12">
+    <div class="why__intro" data-reveal-group>
+      <p class="eyebrow" data-reveal>Why We Go Palawan</p>
+      <h2 class="display display-l" data-split>A local team, and one person to talk to.</h2>
+      <p class="lede" data-reveal>
+        We Go Palawan is a small tour company from {site.location}. We do not sell every tour on the
+        island, only the ones we run and trust.
+      </p>
+      <figure class="why__media media" data-reveal-img data-parallax="0.12">
+        <Image src={img} alt="Limestone cliffs and white sand at Payong-Payong Beach, El Nido" widths={[480, 720, 960]} sizes="(min-width: 960px) 32vw, 100vw" format="webp" quality={76} />
+      </figure>
+    </div>
+
+    <ol class="why__list" data-reveal-group>
+      {points.map((p, i) => (
+        <li class="why__item" data-reveal>
+          <span class="why__num">0{i + 1}</span>
+          <div>
+            <h3 class="why__title">{p.title}</h3>
+            <p class="why__text">{p.text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
+
+<style>
+  .why__intro { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+  .why__intro .display { max-width: 14ch; }
+  .why__media { margin: 1.5rem 0 0; width: 100%; aspect-ratio: 4 / 3; }
+  .why__list { grid-column: 1 / -1; margin-top: 3rem; }
+  .why__item { display: grid; grid-template-columns: 3rem 1fr; gap: 1rem; padding: 1.75rem 0; border-top: 1px solid var(--line-light); }
+  .why__item:last-child { border-bottom: 1px solid var(--line-light); }
+  .why__num { font-size: .72rem; letter-spacing: .2em; color: var(--turquoise); font-weight: 700; padding-top: .4rem; }
+  .why__title { font-size: 1.2rem; font-weight: 600; letter-spacing: -.01em; margin-bottom: .4rem; }
+  .why__text { color: rgba(255,255,255,.7); max-width: 52ch; text-wrap: pretty; }
+  @media (min-width: 960px) {
+    .why__intro { grid-column: 1 / 6; position: sticky; top: calc(var(--nav-h) + 2rem); align-self: start; }
+    .why__media { aspect-ratio: 4 / 5; width: 85%; }
+    .why__list { grid-column: 7 / -1; margin-top: 0; }
+  }
+</style>

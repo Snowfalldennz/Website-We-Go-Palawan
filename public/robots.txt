@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wegopalawan.com/sitemap-index.xml

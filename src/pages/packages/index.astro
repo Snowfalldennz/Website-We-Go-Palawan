@@ -1,0 +1,89 @@
+---
+import { Image } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import PageHero from '@/components/PageHero.astro';
+import FinalCTA from '@/components/FinalCTA.astro';
+import { packages } from '@/data/packages';
+import { peso } from '@/data/tours';
+import { destinationBySlug } from '@/data/destinations';
+import { photo } from '@/data/images';
+
+const single = packages.filter((p) => p.destinations.length === 1);
+const multi = packages.filter((p) => p.destinations.length > 1);
+const names = (p: (typeof packages)[number]) => p.destinations.map((s) => destinationBySlug(s).name).join(' + ');
+---
+
+<Base title="Complete packages" description="Room, transfers and tours in one price. 3D2N packages for El Nido, Coron and Puerto Princesa, a Port Barton day tour, and multi-destination routes.">
+  <PageHero
+    image="tours/el-nido/el-nido-tour-a/seven-commando-beach.png"
+    alt="Palm trees and white sand at Seven Commando Beach"
+    title="Land, and we take it from there."
+    lede="Airport transfer, an air-conditioned room with breakfast, and the tours. One price per person, no hidden charges."
+  />
+
+  <section class="pk section" data-nav-theme="dark">
+    <div class="container">
+      <header class="pk__head" data-reveal-group>
+        <p class="eyebrow" data-reveal>Single destination</p>
+        <h2 class="display display-l" data-reveal>Three days, one place.</h2>
+      </header>
+      <div class="pk__grid" data-reveal-group>
+        {single.map((p) => (
+          <a href={`/packages/${p.slug}`} class="pkc" data-reveal>
+            <span class="media zoom-hover pkc__img"><Image src={photo(p.hero)} alt={p.name} widths={[480, 720, 960]} sizes="(min-width: 960px) 46vw, 100vw" format="webp" quality={76} /></span>
+            <span class="pkc__body">
+              <span class="pkc__name display display-s">{p.name}</span>
+              <span class="pkc__tag">{p.tagline}</span>
+              <span class="pkc__price">{p.price ? <><b>{peso(p.price.promo)}</b> <s>{peso(p.price.original)}</s> per person</> : p.priceNote}</span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="pk section off" data-nav-theme="dark">
+    <div class="container">
+      <header class="pk__head" data-reveal-group>
+        <p class="eyebrow" data-reveal>Multi-destination</p>
+        <h2 class="display display-l" data-reveal>See more of the island.</h2>
+        <p class="lede" data-reveal>Puerto Princesa and El Nido by van, or El Nido and Coron by ferry. Rates depend on the season and your group size, so ask and we will quote.</p>
+      </header>
+      <ul class="pk__list" data-reveal-group>
+        {multi.map((p) => (
+          <li data-reveal>
+            <a href={`/packages/${p.slug}`} class="pkr">
+              <span class="pkr__name">{p.name}</span>
+              <span class="pkr__route">{names(p)}</span>
+              <span class="pkr__tag">{p.tagline}</span>
+              <span class="link-arrow">View <span class="arrow">→</span></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <FinalCTA title="Want a custom route?" text="We build private itineraries for families and groups." cta="Ask us" image="tours/coron/coron-ultimate-tour/kayangan-lake.png" alt="Kayangan Lake, Coron" />
+</Base>
+
+<style>
+  .pk__head { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+  .pk__grid { display: grid; grid-template-columns: 1fr; gap: 3rem 2rem; }
+  .pkc { display: block; }
+  .pkc__img { display: block; }
+  .pkc__img img { aspect-ratio: 16 / 10; }
+  .pkc__body { display: flex; flex-direction: column; gap: .4rem; padding-top: 1.25rem; }
+  .pkc__tag { color: var(--ink-2); }
+  .pkc__price { margin-top: .4rem; font-size: .9rem; color: var(--ink-3); }
+  .pkc__price b { font-size: 1.2rem; color: var(--ink); }
+  .pkc__price s { opacity: .6; margin: 0 .3rem; }
+  .pk__list li { border-top: 1px solid var(--line); }
+  .pk__list li:last-child { border-bottom: 1px solid var(--line); }
+  .pkr { display: grid; grid-template-columns: 1fr; gap: .3rem; padding: 1.5rem 0; }
+  .pkr__name { font-size: 1.3rem; font-weight: 600; letter-spacing: -.02em; }
+  .pkr__route { color: var(--ink-2); }
+  .pkr__tag { color: var(--ink-3); }
+  @media (min-width: 720px) { .pk__grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 960px) { .pkr { grid-template-columns: 1.6fr 1fr 1.4fr auto; align-items: center; gap: 2rem; } }
+</style>

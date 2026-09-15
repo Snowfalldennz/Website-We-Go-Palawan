@@ -1,0 +1,23 @@
+---
+import Base from '@/layouts/Base.astro';
+import PageHero from '@/components/PageHero.astro';
+---
+
+<Base title="Page not found" navTheme="light">
+  <PageHero
+    image="packages/port-barton/port-barton-day-tour/sand-bar.jpg"
+    alt="A sandbar appearing between two islands in Port Barton at low tide"
+    eyebrow="404"
+    title="This page went island hopping without you."
+    lede="The page you're looking for doesn't exist, or the tide's taken it. Try one of these instead."
+  >
+    <div class="err__ctas" data-reveal>
+      <a href="/" class="btn">Back to home</a>
+      <a href="/tours" class="btn btn-ghost">Browse tours</a>
+    </div>
+  </PageHero>
+</Base>
+
+<style>
+  .err__ctas { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.75rem; }
+</style>

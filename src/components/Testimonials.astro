@@ -1,0 +1,70 @@
+---
+import { Image } from 'astro:assets';
+import { reviews } from '@/data/testimonials';
+import { reviewPhoto } from '@/data/images';
+
+const columns = [1, 2, 3].map((n) => reviews.filter((r) => r.col === n));
+---
+
+<section class="reviews section off" data-bg="#f6f4ef" id="reviews" data-nav-theme="dark">
+  <div class="container">
+    <header class="reviews__head" data-reveal-group>
+      <p class="eyebrow" data-reveal>Guest reviews</p>
+      <h2 class="display display-l" data-split>In their words.</h2>
+    </header>
+
+    <div class="reviews__grid">
+      {columns.map((col) => (
+        <div class="reviews__col">
+          {col.map((r) => (
+            <figure class="review-shot" data-reveal-img>
+              <Image
+                src={reviewPhoto(r.image)}
+                alt={r.alt}
+                widths={[320, 480, 640]}
+                sizes="(min-width: 1100px) 31vw, (min-width: 680px) 46vw, 90vw"
+                format="webp"
+                quality={85}
+              />
+            </figure>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .reviews__head { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: clamp(3rem, 6vw, 5rem); }
+
+  /* Screenshots vary a lot in height — some are a single line of text,
+     others carry a guest photo or a whole grid of them. Each of the 3
+     columns below is its own vertical stack (assigned by hand in
+     testimonials.ts, see the comment there) rather than a CSS auto-balanced
+     multi-column, so adding a review never reshuffles where the existing
+     ones land or opens a gap under one of them. */
+  .reviews__grid {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.25rem, 2.5vw, 2rem);
+  }
+  .reviews__col {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.25rem, 2.5vw, 2rem);
+  }
+  .review-shot {
+    margin: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--white);
+    box-shadow: 0 14px 34px rgba(7, 26, 36, 0.1);
+    border: 1px solid rgba(7, 26, 36, 0.08);
+  }
+  .review-shot img { display: block; width: 100%; height: auto; }
+
+  @media (min-width: 680px) {
+    .reviews__grid { flex-direction: row; align-items: flex-start; }
+    .reviews__col { flex: 1 1 0; }
+  }
+</style>

@@ -1,0 +1,156 @@
+---
+import { nav, site } from '@/data/site';
+
+interface Props {
+  theme?: 'light' | 'dark';
+  transparent?: boolean;
+}
+const { theme = 'light', transparent = true } = Astro.props;
+const path = Astro.url.pathname;
+---
+
+<header
+  class:list={['nav', `nav--${theme}`, { 'nav--transparent': transparent, 'nav--solid': !transparent }]}
+  data-nav
+  data-initial-theme={theme}
+  data-initial-transparent={transparent ? 'true' : 'false'}
+>
+  <div class="nav__inner container">
+    <a href="/" class="nav__logo" aria-label={`${site.name} home`}>
+      <span class="nav__wordmark">WE GO <em>PALAWAN</em></span>
+    </a>
+
+    <nav class="nav__links" aria-label="Primary">
+      {nav.map((item) => (
+        <a href={item.href} class:list={['nav__link', { 'is-active': path === item.href }]}>{item.label}</a>
+      ))}
+    </nav>
+
+    <div class="nav__actions">
+      <a href="/book" class="btn nav__cta">Book your trip</a>
+      <button class="nav__burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu" data-nav-toggle>
+        <span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="menu" id="mobile-menu" data-menu hidden>
+  <div class="menu__inner">
+    <nav class="menu__links" aria-label="Mobile">
+      {nav.map((item, i) => (
+        <a href={item.href} class="menu__link" style={`--i:${i}`}>{item.label}</a>
+      ))}
+    </nav>
+    <div class="menu__foot">
+      <a href="/book" class="btn btn-accent">Book your trip</a>
+      <a href={`tel:${site.phoneIntl}`} class="menu__phone">{site.phone}</a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .nav {
+    position: fixed; inset: 0 0 auto 0; z-index: 50;
+    height: var(--nav-h);
+    color: var(--white);
+    transition: background-color .5s var(--ease-out), color .5s var(--ease-out), transform .6s var(--ease-out), box-shadow .5s;
+    will-change: transform;
+  }
+  .nav--dark { color: var(--navy); }
+  .nav--solid.nav--light { background: var(--navy); }
+  .nav--solid.nav--dark { background: rgba(255,255,255,.96); box-shadow: 0 1px 0 var(--line); }
+  .nav--hidden { transform: translateY(-100%); }
+
+  .nav__inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+
+  .nav__wordmark {
+    font-weight: 700; letter-spacing: .18em; font-size: .82rem; white-space: nowrap;
+    color: var(--logo-yellow);
+  }
+  .nav__wordmark em { font-style: normal; font-weight: 500; color: var(--logo-blue); }
+  /* .nav--dark always sits on a light background (a light page section showing
+     through, or the near-white solid bar) — the true logo yellow/blue above
+     are tuned for the dark backgrounds .nav--light sits on, and are close to
+     invisible on white, so this theme swaps in the site's already-legible
+     equivalents instead. */
+  .nav--dark .nav__wordmark { color: var(--gold); }
+  .nav--dark .nav__wordmark em { color: var(--ocean); }
+
+  .nav__links { display: none; gap: 2.25rem; }
+  .nav__link {
+    font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 600;
+    position: relative; padding-block: .4rem; opacity: .85; transition: opacity .3s;
+  }
+  .nav__link::after {
+    content: ''; position: absolute; left: 0; bottom: 0; height: 1px; width: 100%;
+    background: currentColor; transform: scaleX(0); transform-origin: right;
+    transition: transform .5s var(--ease-out);
+  }
+  .nav__link:hover, .nav__link.is-active { opacity: 1; }
+  .nav__link:hover::after, .nav__link.is-active::after { transform: scaleX(1); transform-origin: left; }
+
+  .nav__actions { display: flex; align-items: center; gap: 1rem; }
+  .nav__cta { display: none; padding: .8rem 1.35rem; font-size: .7rem; }
+  .nav--light .nav__cta { --btn-bg: var(--white); --btn-fg: var(--navy); }
+  .nav--dark .nav__cta { --btn-bg: var(--navy); --btn-fg: var(--white); }
+
+  .nav__burger {
+    width: 44px; height: 44px; display: grid; place-content: center; gap: 6px; margin-right: -10px;
+  }
+  .nav__burger span { display: block; width: 24px; height: 1.5px; background: currentColor; transition: transform .4s var(--ease-out), opacity .3s; }
+  .nav__burger[aria-expanded='true'] span:first-child { transform: translateY(3.75px) rotate(45deg); }
+  .nav__burger[aria-expanded='true'] span:last-child { transform: translateY(-3.75px) rotate(-45deg); }
+  .nav.menu-open { color: var(--white); background: transparent; box-shadow: none; }
+
+  @media (min-width: 960px) {
+    .nav__links { display: flex; }
+    .nav__cta { display: inline-flex; }
+    .nav__burger { display: none; }
+  }
+
+  /* Mobile menu */
+  .menu {
+    position: fixed; inset: 0; z-index: 40; background: var(--navy); color: var(--white);
+    opacity: 0; visibility: hidden; transition: opacity .5s var(--ease-out), visibility 0s .5s;
+  }
+  .menu[hidden] { display: block; }
+  .menu.is-open { opacity: 1; visibility: visible; transition: opacity .5s var(--ease-out); }
+  .menu__inner { height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: calc(var(--nav-h) + 2rem) var(--gutter) 2.5rem; }
+  .menu__links { display: flex; flex-direction: column; gap: .25rem; }
+  .menu__link {
+    font-size: clamp(2.25rem, 9vw, 3.5rem); font-weight: 500; letter-spacing: -.03em; line-height: 1.15;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity .7s var(--ease-out), transform .7s var(--ease-out);
+    transition-delay: calc(.08s + var(--i) * .06s);
+  }
+  .menu.is-open .menu__link { opacity: 1; transform: none; }
+  .menu__foot { display: flex; flex-direction: column; gap: 1.25rem; align-items: flex-start; }
+  .menu__phone { font-size: .9rem; letter-spacing: .08em; opacity: .7; }
+</style>
+
+<script>
+  import { onPage } from '@/scripts/motion';
+
+  onPage(() => {
+    const nav = document.querySelector<HTMLElement>('[data-nav]');
+    const toggle = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
+    const menu = document.querySelector<HTMLElement>('[data-menu]');
+    if (!nav || !toggle || !menu) return;
+
+    // A navigation can land with the menu still marked open.
+    document.documentElement.style.overflow = '';
+
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      menu.classList.toggle('is-open', open);
+      nav.classList.toggle('menu-open', open);
+      document.documentElement.style.overflow = open ? 'hidden' : '';
+      window.dispatchEvent(new CustomEvent('menu:toggle', { detail: { open } }));
+    };
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+  });
+</script>

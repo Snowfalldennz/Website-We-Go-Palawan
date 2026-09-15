@@ -1,0 +1,119 @@
+---
+import { Image } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import PageHero from '@/components/PageHero.astro';
+import TourCard from '@/components/TourCard.astro';
+import FinalCTA from '@/components/FinalCTA.astro';
+import { destinations, type Destination } from '@/data/destinations';
+import { toursFor, peso } from '@/data/tours';
+import { packages } from '@/data/packages';
+import { photo } from '@/data/images';
+
+export function getStaticPaths() {
+  return destinations.map((d) => ({ params: { slug: d.slug }, props: { d } }));
+}
+const { d } = Astro.props as { d: Destination };
+const list = toursFor(d.slug);
+const pkgs = packages.filter((p) => p.destinations.includes(d.slug));
+const others = destinations.filter((x) => x.slug !== d.slug);
+---
+
+<Base title={d.name} description={d.intro}>
+  <PageHero image={d.hero} alt={`${d.name}, Palawan`} title={d.name} lede={d.short} />
+
+  <section class="dd section" data-nav-theme="dark">
+    <div class="container grid-12">
+      <div class="dd__intro" data-reveal-group>
+        <h2 class="display display-m" data-reveal>{d.intro}</h2>
+        <dl class="dd__facts" data-reveal>
+          <div><dt>Getting there</dt><dd>{d.travel}</dd></div>
+          <div><dt>Known for</dt><dd>{d.mood.join(' · ')}</dd></div>
+          <div><dt>Tours we run</dt><dd>{list.length}</dd></div>
+        </dl>
+      </div>
+      <figure class="dd__media media" data-parallax="0.12" transition:name={`dest-${d.slug}`}>
+        <Image src={photo(d.cover)} alt={d.name} widths={[480, 720, 960, 1280]} sizes="(min-width: 960px) 40vw, 100vw" format="webp" quality={78} />
+      </figure>
+    </div>
+  </section>
+
+  <section class="dd-tours section off" id="tours" data-nav-theme="dark">
+    <div class="container">
+      <header class="dd__head" data-reveal-group>
+        <p class="eyebrow" data-reveal>Tours in {d.name}</p>
+        <h2 class="display display-l" data-reveal>Pick your day.</h2>
+      </header>
+      <div class="dd__grid" data-reveal-group>
+        {list.map((t) => <div data-reveal><TourCard tour={t} sizes="(min-width: 960px) 30vw, (min-width: 640px) 46vw, 100vw" /></div>)}
+      </div>
+    </div>
+  </section>
+
+  {pkgs.length > 0 && (
+    <section class="dd-pk section" data-nav-theme="dark">
+      <div class="container">
+        <header class="dd__head" data-reveal-group>
+          <p class="eyebrow" data-reveal>Packages</p>
+          <h2 class="display display-l" data-reveal>Stay a few nights.</h2>
+        </header>
+        <ul class="dd-pk__list" data-reveal-group>
+          {pkgs.map((p) => (
+            <li class="dd-pk__item" data-reveal>
+              <a href={`/packages/${p.slug}`} class="dd-pk__link">
+                <span class="dd-pk__name">{p.name}</span>
+                <span class="dd-pk__tag">{p.tagline}</span>
+                <span class="dd-pk__price">{p.price ? `${peso(p.price.promo)} per person` : p.priceNote}</span>
+                <span class="link-arrow">View <span class="arrow">→</span></span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+
+  <section class="dd-more section-tight dark" data-nav-theme="light">
+    <div class="container">
+      <p class="eyebrow" data-reveal>Elsewhere in Palawan</p>
+      <div class="dd-more__row" data-reveal-group>
+        {others.map((o) => (
+          <a href={`/destinations/${o.slug}`} class="dd-more__item" data-reveal>
+            <span class="media zoom-hover dd-more__img"><Image src={photo(o.cover)} alt={o.name} widths={[360, 540, 720]} sizes="(min-width: 720px) 30vw, 100vw" format="webp" quality={72} /></span>
+            <span class="dd-more__name display display-s">{o.name}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <FinalCTA title={`Ready for ${d.name}?`} text="Tell us your dates. We will plan the rest." cta="Book your trip" href={`/book?trip=${encodeURIComponent(d.name)}`} image={list[0]?.stops[1]?.image ?? d.cover} alt={d.name} />
+</Base>
+
+<style>
+  .dd__intro { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 2.5rem; }
+  .dd__intro .display { max-width: 22ch; font-weight: 500; }
+  .dd__facts { margin: 0; display: flex; flex-direction: column; }
+  .dd__facts div { display: grid; grid-template-columns: 9rem 1fr; gap: 1rem; padding: .8rem 0; border-top: 1px solid var(--line); }
+  .dd__facts dt { color: var(--ink-3); font-size: .9rem; }
+  .dd__facts dd { margin: 0; font-weight: 500; }
+  .dd__media { grid-column: 1 / -1; margin: 2rem 0 0; aspect-ratio: 4 / 5; }
+  .dd__head { display: flex; flex-direction: column; gap: 1rem; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+  .dd__grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem 2rem; }
+  .dd-pk__item { border-top: 1px solid var(--line); }
+  .dd-pk__item:last-child { border-bottom: 1px solid var(--line); }
+  .dd-pk__link { display: grid; grid-template-columns: 1fr; gap: .35rem; padding: 1.5rem 0; }
+  .dd-pk__name { font-size: 1.4rem; font-weight: 600; letter-spacing: -.02em; }
+  .dd-pk__tag { color: var(--ink-2); }
+  .dd-pk__price { font-weight: 600; }
+  .dd-more__row { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+  .dd-more__item { display: flex; flex-direction: column; gap: .9rem; }
+  .dd-more__img { display: block; }
+  .dd-more__img img { aspect-ratio: 16 / 10; }
+  @media (min-width: 640px) { .dd__grid { grid-template-columns: repeat(2, 1fr); } .dd-more__row { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 960px) {
+    .dd__intro { grid-column: 1 / 7; }
+    .dd__media { grid-column: 8 / -1; margin-top: 0; }
+    .dd__grid { grid-template-columns: repeat(3, 1fr); }
+    .dd-pk__link { grid-template-columns: 1.4fr 1.6fr 1fr auto; align-items: center; gap: 2rem; }
+  }
+</style>

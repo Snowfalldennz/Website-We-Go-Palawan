@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.astro/
+scripts/.frames/
+
+# Raw source uploads — originals sync-assets.mjs / optimize-video.mjs read
+# from to produce what's actually in src/assets/ and public/. Not needed to
+# build or deploy the site; excluded so the repo doesn't carry ~265MB of
+# unprocessed media. Keep these backed up separately (they're the masters).
+/Tours Only/
+/Complete Packages/
+/Videos/

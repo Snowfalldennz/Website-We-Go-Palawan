@@ -1,0 +1,72 @@
+---
+import { Image } from 'astro:assets';
+import { site } from '@/data/site';
+import { destinations } from '@/data/destinations';
+import { photo } from '@/data/images';
+const year = new Date().getFullYear();
+const logo = photo('tours/logo.jpg');
+---
+
+<footer class="footer dark" data-bg="#071a24" data-nav-theme="light">
+  <div class="container">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <p class="footer__wordmark">WE GO <em>PALAWAN</em></p>
+        <p class="footer__tag">Tours, van transfers and accommodation across Palawan. Based in {site.location}.</p>
+        <a class="footer__phone" href={`tel:${site.phoneIntl}`}>{site.phone}</a>
+        {site.email && <a class="footer__phone" href={`mailto:${site.email}`}>{site.email}</a>}
+        {site.facebook && (
+          site.facebookUrl
+            ? <a class="footer__phone" href={site.facebookUrl} target="_blank" rel="noopener">{site.facebook} on Facebook</a>
+            : <span class="footer__phone footer__phone--static">{site.facebook} on Facebook</span>
+        )}
+      </div>
+
+      <nav class="footer__col" aria-label="Destinations">
+        <p class="footer__head">Destinations</p>
+        {destinations.map((d) => <a href={`/destinations/${d.slug}`}>{d.name}</a>)}
+      </nav>
+
+      <nav class="footer__col" aria-label="Site">
+        <p class="footer__head">Explore</p>
+        <a href="/tours">All tours</a>
+        <a href="/packages">Complete packages</a>
+        <a href="/#services">Services</a>
+        <a href="/#about">About</a>
+        <a href="/book">Book your trip</a>
+      </nav>
+
+      <div class="footer__col footer__logo">
+        <Image src={logo} alt={`${site.name} logo`} width={120} height={120} class="footer__logo-img" loading="lazy" />
+      </div>
+    </div>
+
+    <div class="footer__bottom">
+      <span>© {year} {site.name} Tour Services</span>
+      <span class="muted">{site.location}</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer { padding-block: clamp(4rem, 8vw, 7rem) 2rem; }
+  .footer__top {
+    display: grid; gap: 3rem 2rem;
+    grid-template-columns: 1fr;
+    padding-bottom: 3.5rem; border-bottom: 1px solid var(--line-light);
+  }
+  @media (min-width: 720px) { .footer__top { grid-template-columns: 1.6fr 1fr 1fr auto; } }
+
+  .footer__wordmark { font-weight: 700; letter-spacing: .18em; font-size: .85rem; margin-bottom: 1.25rem; color: var(--logo-yellow); }
+  .footer__wordmark em { font-style: normal; font-weight: 500; color: var(--logo-blue); }
+  .footer__tag { max-width: 34ch; color: rgba(255,255,255,.7); margin-bottom: 1.5rem; text-wrap: pretty; }
+  .footer__phone { display: block; font-weight: 600; letter-spacing: .06em; margin-bottom: .35rem; }
+  .footer__phone--static { opacity: .7; cursor: default; }
+  .footer__head { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 1.25rem; }
+  .footer__col { display: flex; flex-direction: column; gap: .6rem; }
+  .footer__col a { color: rgba(255,255,255,.85); transition: color .3s; width: fit-content; }
+  .footer__col a:hover { color: var(--turquoise); }
+  .footer__logo { align-items: flex-start; }
+  .footer__logo-img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; }
+  .footer__bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding-top: 1.75rem; font-size: .8rem; color: rgba(255,255,255,.6); }
+</style>

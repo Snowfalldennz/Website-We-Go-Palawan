@@ -1,0 +1,40 @@
+---
+import { Image } from 'astro:assets';
+import { photo } from '@/data/images';
+
+interface Props {
+  image: string;
+  alt: string;
+  eyebrow?: string;
+  title: string;
+  lede?: string;
+  compact?: boolean;
+  /** Shared name with the card that links here, for the view transition morph. */
+  morph?: string;
+}
+const { image, alt, eyebrow, title, lede, compact = false, morph } = Astro.props;
+---
+
+<section class:list={['phero', { 'phero--compact': compact }]} data-hero data-nav-theme="light">
+  <figure class="phero__media media" data-parallax="0.2" data-scale-in transition:name={morph}>
+    <Image src={photo(image)} alt={alt} widths={[720, 1080, 1600, 2000]} sizes="100vw" format="webp" quality={78} loading="eager" fetchpriority="high" />
+  </figure>
+  <div class="phero__shade" aria-hidden="true"></div>
+  <div class="phero__content container" data-reveal-group>
+    {eyebrow && <p class="eyebrow" data-reveal>{eyebrow}</p>}
+    <h1 class="display display-l" data-reveal>{title}</h1>
+    {lede && <p class="phero__lede" data-reveal>{lede}</p>}
+    <slot />
+  </div>
+</section>
+
+<style>
+  .phero { position: relative; min-height: 78vh; min-height: 78svh; display: flex; align-items: flex-end; color: var(--white); overflow: hidden; background: var(--navy); }
+  .phero--compact { min-height: 58vh; }
+  .phero__media { position: absolute; inset: 0; margin: 0; }
+  .phero__media img { width: 100%; height: 100%; object-fit: cover; }
+  .phero__shade { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(7,26,36,.35), rgba(7,26,36,0) 30%), linear-gradient(to top, rgba(7,26,36,.7), rgba(7,26,36,0) 60%); }
+  .phero__content { position: relative; display: flex; flex-direction: column; gap: 1.1rem; align-items: flex-start; padding-block: clamp(2.5rem, 6vw, 5rem); }
+  .phero__content .display { max-width: 14ch; }
+  .phero__lede { font-size: clamp(1.05rem, 1.4vw, 1.3rem); max-width: 44ch; opacity: .92; text-wrap: pretty; }
+</style>

@@ -1,0 +1,60 @@
+---
+import { Image } from 'astro:assets';
+import { photo } from '@/data/images';
+
+interface Item { name: string; image: string; caption?: string; }
+interface Props { items: Item[]; title?: string; eyebrow?: string; dark?: boolean; }
+const { items, title = 'The stops', eyebrow = 'Gallery', dark = false } = Astro.props;
+const id = `gal-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<section class:list={['gal section-tight', { dark }]} data-nav-theme={dark ? 'light' : 'dark'} data-gallery>
+  <div class="container gal__head" data-reveal-group>
+    <div>
+      <p class="eyebrow" data-reveal>{eyebrow}</p>
+      <h2 class="display display-m" data-reveal>{title}</h2>
+    </div>
+    <div class="gal__nav" data-reveal>
+      <button type="button" class="gal__btn" aria-label="Previous" data-gal-prev aria-controls={id}>←</button>
+      <button type="button" class="gal__btn" aria-label="Next" data-gal-next aria-controls={id}>→</button>
+    </div>
+  </div>
+
+  <div class="gal__track hscroll" id={id} data-lenis-prevent data-gal-track tabindex="0" aria-label={title}>
+    {items.map((it, i) => (
+      <figure class="gal__item" data-reveal style={`--i:${i}`}>
+        <div class="media zoom-hover">
+          <Image src={photo(it.image)} alt={it.name} widths={[480, 720, 960, 1200]} sizes="(min-width: 960px) 34vw, 78vw" format="webp" quality={76} />
+        </div>
+        <figcaption class="gal__cap">{it.name}{it.caption ? <span class="gal__sub"> — {it.caption}</span> : null}</figcaption>
+      </figure>
+    ))}
+  </div>
+</section>
+
+<style>
+  .gal__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; margin-bottom: 2.5rem; }
+  .gal__head .eyebrow { margin-bottom: 1rem; }
+  .gal__nav { display: none; gap: .5rem; }
+  .gal__btn { width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; font-size: 1.1rem; transition: background .3s, color .3s, border-color .3s; }
+  .gal__btn:hover { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .dark .gal__btn { border-color: var(--line-light); }
+  .dark .gal__btn:hover { background: var(--white); color: var(--navy); border-color: var(--white); }
+  .gal__item { margin: 0; width: min(78vw, 420px); }
+  .gal__item .media img { aspect-ratio: 4 / 3; }
+  .gal__cap { margin-top: .9rem; font-weight: 600; font-size: .95rem; }
+  .gal__sub { font-weight: 400; color: var(--ink-3); }
+  @media (min-width: 960px) {
+    .gal__nav { display: flex; }
+    .gal__item { width: 34vw; max-width: 560px; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
+    const track = root.querySelector<HTMLElement>('[data-gal-track]')!;
+    const step = () => (track.firstElementChild as HTMLElement).offsetWidth + 24;
+    root.querySelector('[data-gal-prev]')?.addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }));
+    root.querySelector('[data-gal-next]')?.addEventListener('click', () => track.scrollBy({ left: step(), behavior: 'smooth' }));
+  });
+</script>

@@ -1,0 +1,233 @@
+---
+import { Image } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import { site } from '@/data/site';
+import { tours } from '@/data/tours';
+import { packages } from '@/data/packages';
+import { photo } from '@/data/images';
+
+const faqs = [
+  { q: 'How much is the reservation fee?', a: '₱300 per person per tour, and ₱200 per person for the city tour. The balance is settled on the day.' },
+  { q: 'What if it rains?', a: 'If a tour is cancelled because of the weather, we give a full refund.' },
+  { q: 'Is hotel pick-up included?', a: 'Yes. In Puerto Princesa we pick you up anywhere in the city, including your hotel, in a 12 to 13 seater air-conditioned van.' },
+  { q: 'Do you have child rates?', a: 'Children 0 to 2 are free. Ages 3 to 5 get ₱200 off the Underground River, Honda Bay and Firefly tours, and 50% off the city tour. Ages 6 and up pay the adult rate.' },
+  { q: 'Is there a senior or PWD discount?', a: 'Our promo rates are already discounted from the original rates, so they apply to everyone.' },
+  { q: 'Can we swim in the Underground River?', a: 'No. Swimming is not allowed, to protect the wildlife and keep the cave quiet.' },
+  { q: 'Is lunch included?', a: 'Yes on the Underground River, Honda Bay and island hopping tours. The city tour comes with light snacks.' },
+  { q: 'Can we do a private tour?', a: 'Yes. The price depends on your group size and which tours you want, so message us.' },
+  { q: 'Are pregnant guests allowed?', a: 'Yes.' },
+];
+const img = photo('tours/el-nido/el-nido-tour-a/big-lagoon.png');
+
+// Messenger's m.me links can open a chat with a specific Page, but unlike
+// WhatsApp's wa.me they can't pre-fill the message — so that button copies
+// the text first (see the script below) rather than trying to hand it off.
+const messengerUsername = site.facebookUrl ? site.facebookUrl.replace(/\/$/, '').split('/').pop() : '';
+const messengerUrl = messengerUsername ? `https://m.me/${messengerUsername}` : '';
+---
+
+<Base title="Book your trip" description="Send us your dates, group size and the tour or package you want. We confirm within the day." navTransparent={false} navTheme="dark">
+  <section class="bk section" data-nav-theme="dark">
+    <div class="container grid-12">
+      <div class="bk__intro" data-reveal-group>
+        <h1 class="display display-l" data-reveal>Tell us your dates. We do the rest.</h1>
+        <p class="lede" data-reveal>Fill this in and send it to us on WhatsApp, or call. We confirm availability within the day and hold your seats with a small reservation fee.</p>
+        <dl class="bk__contact" data-reveal>
+          <div><dt>Phone / WhatsApp</dt><dd><a href={`tel:${site.phoneIntl}`}>{site.phone}</a></dd></div>
+          {site.email && <div><dt>Email</dt><dd><a href={`mailto:${site.email}`}>{site.email}</a></dd></div>}
+          <div><dt>Based in</dt><dd>{site.location}</dd></div>
+          <div><dt>Reservation fee</dt><dd>{site.reservationFee}</dd></div>
+        </dl>
+        <figure class="bk__media media" data-reveal-img data-parallax="0.1">
+          <Image src={img} alt="Boats in the Big Lagoon, El Nido" widths={[480, 720, 960]} sizes="(min-width: 960px) 36vw, 100vw" format="webp" quality={74} />
+        </figure>
+      </div>
+
+      <form class="bk__form" data-book-form data-whatsapp={site.whatsapp} data-reveal novalidate>
+        <div class="f">
+          <label for="f-name">Your name</label>
+          <input id="f-name" name="name" type="text" autocomplete="name" required />
+        </div>
+        <div class="f">
+          <label for="f-trip">Tour or package</label>
+          <select id="f-trip" name="trip" required>
+            <option value="">Choose one</option>
+            <optgroup label="Complete packages">
+              {packages.map((p) => <option value={p.name}>{p.name}</option>)}
+            </optgroup>
+            <optgroup label="Tours">
+              {tours.map((t) => <option value={t.name}>{t.name}</option>)}
+            </optgroup>
+            <optgroup label="Other">
+              <option value="Van transfer">Van transfer</option>
+              <option value="Accommodation only">Accommodation only</option>
+              <option value="Custom itinerary">Custom itinerary</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="f-row">
+          <div class="f">
+            <label for="f-date">Travel date</label>
+            <input id="f-date" name="date" type="date" required />
+          </div>
+          <div class="f">
+            <label for="f-pax">Number of people</label>
+            <input id="f-pax" name="pax" type="number" min="1" max="60" inputmode="numeric" required />
+          </div>
+        </div>
+        <div class="f">
+          <label for="f-contact">Your contact (phone, WhatsApp or email)</label>
+          <input id="f-contact" name="contact" type="text" autocomplete="tel" required />
+        </div>
+        <div class="f">
+          <label for="f-msg">Anything else <span class="muted">(optional)</span></label>
+          <textarea id="f-msg" name="message" rows="4" placeholder="Flight times, hotel, children's ages, dietary needs…"></textarea>
+        </div>
+
+        <p class="bk__err" data-book-error hidden>Please fill in your name, trip, date, number of people and a way to contact you.</p>
+
+        <div class="bk__actions">
+          <button type="submit" class="btn btn-dark" data-book-whatsapp>Send on WhatsApp</button>
+          <button type="button" class="btn btn-ghost-dark" data-book-copy>Copy message</button>
+          {messengerUrl && <button type="button" class="btn btn-ghost-dark" data-book-messenger data-messenger-url={messengerUrl}>Message on Facebook</button>}
+          <a href={`tel:${site.phoneIntl}`} class="link-arrow">Call instead <span class="arrow">→</span></a>
+        </div>
+        <p class="bk__small muted">Nothing is charged online. WhatsApp opens with your request already written out; Facebook copies it first so you can paste it in.</p>
+      </form>
+    </div>
+  </section>
+
+  <section class="faq section off" data-nav-theme="dark">
+    <div class="container grid-12">
+      <header class="faq__head" data-reveal-group>
+        <p class="eyebrow" data-reveal>Good to know</p>
+        <h2 class="display display-l" data-reveal>Questions we get every week.</h2>
+      </header>
+      <div class="faq__list" data-reveal-group>
+        {faqs.map((f) => (
+          <details class="faq__item" data-reveal>
+            <summary>{f.q}<span class="faq__plus" aria-hidden="true"></span></summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .bk { padding-top: calc(var(--nav-h) + clamp(3rem, 7vw, 6rem)); }
+  .bk__intro { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+  .bk__intro .display { max-width: 14ch; }
+  .bk__contact { margin: .5rem 0 0; width: 100%; max-width: 30rem; }
+  .bk__contact div { display: grid; grid-template-columns: 9rem 1fr; gap: 1rem; padding: .7rem 0; border-top: 1px solid var(--line); font-size: .92rem; }
+  .bk__contact dt { color: var(--ink-3); }
+  .bk__contact dd { margin: 0; font-weight: 500; }
+  .bk__media { margin: 1.5rem 0 0; width: 100%; aspect-ratio: 4 / 3; }
+
+  .bk__form { grid-column: 1 / -1; margin-top: 3rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .f { display: flex; flex-direction: column; gap: .5rem; }
+  .f label { font-size: .74rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+  .f input, .f select, .f textarea {
+    font: inherit; color: var(--ink); background: transparent;
+    border: 0; border-bottom: 1px solid var(--navy); border-radius: 0; padding: .8rem 0;
+    transition: border-color .3s;
+  }
+  .f input:focus, .f select:focus, .f textarea:focus { outline: none; border-bottom-color: var(--turquoise); }
+  .f textarea { resize: vertical; }
+  .f-row { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+  .bk__err { color: #b3261e; font-size: .9rem; }
+  .bk__actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: .5rem; }
+  .bk__small { font-size: .82rem; max-width: 52ch; }
+
+  .faq__head { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+  .faq__list { grid-column: 1 / -1; }
+  .faq__item { border-top: 1px solid var(--line); }
+  .faq__item:last-child { border-bottom: 1px solid var(--line); }
+  .faq__item summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.2rem 0; font-weight: 600; font-size: 1.05rem; }
+  .faq__item summary::-webkit-details-marker { display: none; }
+  .faq__plus { position: relative; width: 14px; height: 14px; flex: none; }
+  .faq__plus::before, .faq__plus::after { content: ''; position: absolute; background: currentColor; transition: transform .4s var(--ease-out); }
+  .faq__plus::before { left: 0; right: 0; top: 6px; height: 1.5px; }
+  .faq__plus::after { top: 0; bottom: 0; left: 6px; width: 1.5px; }
+  .faq__item[open] .faq__plus::after { transform: scaleY(0); }
+  .faq__item p { padding: 0 0 1.4rem; color: var(--ink-2); max-width: 60ch; }
+
+  @media (min-width: 640px) { .f-row { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 960px) {
+    .bk__intro { grid-column: 1 / 6; }
+    .bk__form { grid-column: 7 / -1; margin-top: 0; }
+    .faq__head { grid-column: 1 / 5; position: sticky; top: calc(var(--nav-h) + 2rem); align-self: start; }
+    .faq__list { grid-column: 6 / -1; }
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-book-form]');
+  if (form) {
+    const err = form.querySelector<HTMLElement>('[data-book-error]')!;
+    const trip = form.querySelector<HTMLSelectElement>('#f-trip')!;
+
+    // Pre-select the trip from ?trip=… (used by every "Book" button on the site).
+    const wanted = new URLSearchParams(location.search).get('trip');
+    if (wanted) {
+      const opt = [...trip.options].find((o) => o.value.toLowerCase() === wanted.toLowerCase());
+      if (opt) opt.selected = true;
+      else if (wanted) {
+        // Destination names and other free-text: pick "Custom itinerary" and mention it.
+        const custom = [...trip.options].find((o) => o.value === 'Custom itinerary');
+        if (custom) custom.selected = true;
+        const msg = form.querySelector<HTMLTextAreaElement>('#f-msg')!;
+        msg.value = `Interested in: ${wanted}`;
+      }
+    }
+
+    const compose = () => {
+      const d = new FormData(form);
+      const get = (k: string) => String(d.get(k) || '').trim();
+      if (!get('name') || !get('trip') || !get('date') || !get('pax') || !get('contact')) return null;
+      const lines = [
+        `Hi We Go Palawan, I'd like to book:`,
+        ``,
+        `Trip: ${get('trip')}`,
+        `Date: ${get('date')}`,
+        `People: ${get('pax')}`,
+        `Name: ${get('name')}`,
+        `Contact: ${get('contact')}`,
+      ];
+      if (get('message')) lines.push(``, get('message'));
+      return lines.join('\n');
+    };
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = compose();
+      err.hidden = !!text;
+      if (!text) return;
+      const number = (form.dataset.whatsapp || '').replace(/[^\d]/g, '');
+      const url = number ? `https://wa.me/${number}?text=${encodeURIComponent(text)}` : `sms:?body=${encodeURIComponent(text)}`;
+      window.open(url, '_blank', 'noopener');
+    });
+
+    form.querySelector('[data-book-copy]')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      const text = compose();
+      err.hidden = !!text;
+      if (!text) return;
+      try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; setTimeout(() => (btn.textContent = 'Copy message'), 1800); } catch { /* ignore */ }
+    });
+
+    // Messenger's m.me can't be handed pre-filled text the way wa.me can, so
+    // this copies the message first (best-effort — a failed copy still opens
+    // the chat, just empty) and opens the Page's chat for the guest to paste into.
+    const messenger = form.querySelector<HTMLButtonElement>('[data-book-messenger]');
+    messenger?.addEventListener('click', async () => {
+      const text = compose();
+      err.hidden = !!text;
+      if (!text) return;
+      try { await navigator.clipboard.writeText(text); messenger.textContent = 'Copied — opening Facebook'; } catch { /* ignore */ }
+      window.open(messenger.dataset.messengerUrl, '_blank', 'noopener');
+      setTimeout(() => (messenger.textContent = 'Message on Facebook'), 2200);
+    });
+  }
+</script>

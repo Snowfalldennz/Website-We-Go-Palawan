@@ -1,0 +1,119 @@
+---
+import { Image } from 'astro:assets';
+import { featuredPackages } from '@/data/packages';
+import { peso } from '@/data/tours';
+import { photo } from '@/data/images';
+---
+
+<section class="pkgs section off" data-bg="#f6f4ef" id="packages" data-nav-theme="dark" data-pkgs>
+  <div class="container">
+    <header class="pkgs__head" data-reveal-group>
+      <p class="eyebrow" data-reveal>Complete packages</p>
+      <h2 class="display display-l" data-split>Room, transfers and tours. One price.</h2>
+      <p class="lede" data-reveal>Fly in, and we handle the rest: the van from the airport, a clean air-conditioned room with breakfast, and the tour you came for.</p>
+    </header>
+
+    <div class="pkgs__layout">
+      <div class="pkgs__sticky">
+        <div class="pkgs__frame media">
+          {featuredPackages.map((p, i) => (
+            <div class:list={['pkgs__img', { 'is-active': i === 0 }]} data-pkg-img={p.slug}>
+              <Image src={photo(p.hero)} alt={p.name} widths={[640, 960, 1280]} sizes="(min-width: 960px) 46vw, 100vw" format="webp" quality={78} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="pkgs__list">
+        {featuredPackages.map((p) => (
+          <article class="pkg" data-pkg={p.slug}>
+            <figure class="pkg__mobile media">
+              <Image src={photo(p.hero)} alt={p.name} widths={[480, 800, 1200]} sizes="100vw" format="webp" quality={76} />
+            </figure>
+            <div class="pkg__body" data-reveal-group>
+              <h3 class="display display-m" data-reveal>{p.name}</h3>
+              <p class="lede" data-reveal>{p.tagline}</p>
+              <ul class="pkg__inc" data-reveal>
+                {p.included.slice(0, 4).map((x) => <li>{x}</li>)}
+              </ul>
+              <p class="pkg__price" data-reveal>
+                {p.price ? (
+                  <>
+                    <span class="pkg__promo">{peso(p.price.promo)}</span>
+                    <span class="pkg__orig">{peso(p.price.original)}</span>
+                    <span class="pkg__per">per person</span>
+                  </>
+                ) : (
+                  <span class="pkg__per">{p.priceNote}</span>
+                )}
+              </p>
+              <div class="pkg__ctas" data-reveal>
+                <a href={`/packages/${p.slug}`} class="btn btn-dark">View package</a>
+                <a href={`/book?trip=${encodeURIComponent(p.name)}`} class="link-arrow">Book now <span class="arrow">→</span></a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+
+    <p class="pkgs__foot" data-reveal>
+      Multi-destination routes, like Puerto Princesa + El Nido or the El Nido + Coron ferry route, are on the
+      <a href="/packages" class="pkgs__foot-link">packages page</a>.
+    </p>
+  </div>
+</section>
+
+<style>
+  
+  .pkgs__head { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: clamp(3rem, 6vw, 5rem); max-width: 60ch; }
+  .pkgs__head .display { max-width: 16ch; }
+
+  .pkgs__layout { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+  .pkgs__sticky { display: none; }
+  .pkgs__frame { aspect-ratio: 4 / 5; }
+  .pkgs__img { position: absolute; inset: 0; opacity: 0; transition: opacity 1.1s var(--ease-out); }
+  .pkgs__img img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.06); transition: transform 2.4s var(--ease-out); }
+  .pkgs__img.is-active { opacity: 1; }
+  .pkgs__img.is-active img { transform: scale(1); }
+
+  .pkgs__list { display: flex; flex-direction: column; gap: clamp(4rem, 8vw, 7rem); }
+  .pkg__mobile { margin: 0 0 1.5rem; aspect-ratio: 4 / 3; }
+  .pkg__body { display: flex; flex-direction: column; gap: 1.1rem; align-items: flex-start; }
+  .pkg__inc { display: flex; flex-direction: column; gap: .4rem; padding-left: 1rem; border-left: 1px solid var(--line); color: var(--ink-2); font-size: .95rem; }
+  .pkg__price { display: flex; align-items: baseline; gap: .7rem; }
+  .pkg__promo { font-size: 1.8rem; font-weight: 700; letter-spacing: -.02em; color: var(--gold); }
+  .pkg__orig { text-decoration: line-through; opacity: .5; }
+  .pkg__per { font-size: .85rem; color: var(--ink-3); }
+  .pkg__ctas { display: flex; gap: 1.75rem; align-items: center; flex-wrap: wrap; margin-top: .5rem; }
+  .pkgs__foot { margin-top: clamp(3rem, 6vw, 5rem); color: var(--ink-2); max-width: 60ch; }
+  .pkgs__foot-link { text-decoration: underline; text-underline-offset: 4px; }
+
+  @media (min-width: 960px) {
+    .pkgs__layout { grid-template-columns: 1fr 1fr; gap: clamp(3rem, 6vw, 7rem); align-items: start; }
+    .pkgs__sticky { display: block; position: sticky; top: calc(var(--nav-h) + 1.5rem); }
+    .pkg__mobile { display: none; }
+    .pkg { min-height: 70vh; display: flex; align-items: center; }
+    .pkg:first-child { min-height: auto; padding-top: 1rem; }
+  }
+</style>
+
+<script>
+  import { ScrollTrigger, reducedMotion, onPage } from '@/scripts/motion';
+
+  onPage(() => {
+    const root = document.querySelector<HTMLElement>('[data-pkgs]');
+    if (!root || reducedMotion) return;
+    const imgs = new Map([...root.querySelectorAll<HTMLElement>('[data-pkg-img]')].map((el) => [el.dataset.pkgImg!, el]));
+    const activate = (slug: string) => imgs.forEach((el, key) => el.classList.toggle('is-active', key === slug));
+    root.querySelectorAll<HTMLElement>('[data-pkg]').forEach((block) => {
+      ScrollTrigger.create({
+        trigger: block,
+        start: 'top 55%',
+        end: 'bottom 45%',
+        onEnter: () => activate(block.dataset.pkg!),
+        onEnterBack: () => activate(block.dataset.pkg!),
+      });
+    });
+  });
+</script>

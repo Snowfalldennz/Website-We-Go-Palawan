@@ -1,0 +1,177 @@
+---
+import { Image } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import PageHero from '@/components/PageHero.astro';
+import StopsGallery from '@/components/StopsGallery.astro';
+import FactList from '@/components/FactList.astro';
+import FinalCTA from '@/components/FinalCTA.astro';
+import { packages, stayBySlug, type Pkg } from '@/data/packages';
+import { peso } from '@/data/tours';
+import { destinationBySlug } from '@/data/destinations';
+import { photo } from '@/data/images';
+import { site } from '@/data/site';
+
+export function getStaticPaths() {
+  return packages.map((p) => ({ params: { slug: p.slug }, props: { p } }));
+}
+const { p } = Astro.props as { p: Pkg };
+const route = p.destinations.map((s) => destinationBySlug(s).name).join(' + ');
+const stays = (p.stay ?? []).map(stayBySlug);
+const bookHref = `/book?trip=${encodeURIComponent(p.name)}`;
+const gallery = p.gallery.map((g) => ({ name: g.split('/').pop()!.replace(/\.[a-z]+$/i, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), image: g }));
+---
+
+<Base title={p.name} description={`${p.name} — ${p.tagline} ${p.included.slice(0, 3).join(', ')}.`}>
+  <PageHero image={p.hero} alt={p.name} title={p.name} lede={p.tagline}>
+    <div class="pd__hero-ctas" data-reveal>
+      <a href={bookHref} class="btn">Book this package</a>
+      <a href="#itinerary" class="btn btn-ghost">Itinerary</a>
+    </div>
+  </PageHero>
+
+  <section class="pd section" data-nav-theme="dark">
+    <div class="container grid-12">
+      <div class="pd__main" data-reveal-group>
+        <p class="eyebrow" data-reveal>What's included</p>
+        <ul class="pd__inc" data-reveal>
+          {p.included.map((x) => <li>{x}</li>)}
+        </ul>
+      </div>
+      <aside class="pd__aside" data-reveal>
+        <div class="pd__box">
+          <p class="pd__price">
+            {p.price ? (
+              <>
+                <span class="pd__promo">{peso(p.price.promo)}</span>
+                <span class="pd__orig">{peso(p.price.original)}</span>
+                <span class="pd__per">per person, promo rate</span>
+              </>
+            ) : (
+              <span class="pd__per pd__per--lg">{p.priceNote}</span>
+            )}
+          </p>
+          <dl class="pd__facts">
+            <div><dt>Length</dt><dd>{p.nights}</dd></div>
+            <div><dt>Route</dt><dd>{route}</dd></div>
+            {stays.length > 0 && <div><dt>Stay</dt><dd>{stays.map((s) => s.name).join(', ')}</dd></div>}
+          </dl>
+          <a href={bookHref} class="btn btn-dark pd__book">Book this package</a>
+          <a href={`tel:${site.phoneIntl}`} class="pd__call">or call {site.phone}</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="it section off" id="itinerary" data-nav-theme="dark">
+    <div class="container">
+      <header class="it__head" data-reveal-group>
+        <p class="eyebrow" data-reveal>Itinerary</p>
+        <h2 class="display display-l" data-reveal>Day by day.</h2>
+      </header>
+      <ol class="it__list" data-reveal-group>
+        {p.itinerary.map((d) => (
+          <li class="it__day" data-reveal>
+            <span class="it__label">{d.day}</span>
+            <div class="it__body">
+              <p class="it__text">{d.text}</p>
+              {d.visits && (
+                <ul class="it__visits">
+                  {d.visits.map((v) => <li>{v}</li>)}
+                </ul>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <StopsGallery items={gallery} title="What you will see" eyebrow="On the tour" />
+
+  {stays.length > 0 && (
+    <section class="stay section dark" data-nav-theme="light">
+      <div class="container">
+        <header class="it__head" data-reveal-group>
+          <p class="eyebrow" data-reveal>Where you sleep</p>
+          <h2 class="display display-l" data-reveal>Simple, clean, in town.</h2>
+        </header>
+        {stays.map((s) => (
+          <article class="stay__item grid-12" data-reveal-group>
+            <div class="stay__info">
+              <p class="stay__where" data-reveal>{s.where}</p>
+              <h3 class="display display-m" data-reveal>{s.name}</h3>
+              <p class="stay__note" data-reveal>{s.note}</p>
+              <ul class="stay__amen" data-reveal>
+                {s.amenities.map((a) => <li>{a}</li>)}
+              </ul>
+            </div>
+            <div class="stay__photos">
+              {s.photos.slice(0, 4).map((ph, i) => (
+                <figure class="media zoom-hover" data-reveal style={`--i:${i}`}>
+                  <Image src={photo(ph)} alt={`${s.name} — room`} widths={[360, 540, 720]} sizes="(min-width: 960px) 24vw, 46vw" format="webp" quality={72} />
+                </figure>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="pd-inc section" data-nav-theme="dark">
+    <div class="container pd-inc__grid" data-reveal-group>
+      <div data-reveal><FactList title="Not included" items={p.notIncluded} tone="no" /></div>
+      {p.notes && <div data-reveal><FactList title="Good to know" items={p.notes} /></div>}
+      <div data-reveal><FactList title="Booking" items={['Reservation fee: ' + site.reservationFee, 'Balance is settled on arrival', 'Full refund if a tour is cancelled due to weather']} /></div>
+    </div>
+  </section>
+
+  <FinalCTA title={`Book ${p.name}`} text="Send your dates and group size. We confirm within the day." cta="Book now" href={bookHref} image={p.gallery[0] ?? p.hero} alt={p.name} />
+</Base>
+
+<style>
+  .pd__hero-ctas { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .75rem; }
+  .pd__main { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1.25rem; }
+  .pd__inc li { padding: .9rem 0; border-top: 1px solid var(--line); font-size: 1.1rem; font-weight: 500; }
+  .pd__inc li:last-child { border-bottom: 1px solid var(--line); }
+  .pd__aside { grid-column: 1 / -1; margin-top: 2rem; }
+  .pd__box { border: 1px solid var(--line); padding: 1.75rem; display: flex; flex-direction: column; gap: 1.25rem; }
+  .pd__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; }
+  .pd__promo { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; }
+  .pd__orig { text-decoration: line-through; opacity: .5; }
+  .pd__per { font-size: .85rem; color: var(--ink-3); width: 100%; }
+  .pd__per--lg { font-size: 1.05rem; color: var(--ink); font-weight: 600; }
+  .pd__facts { display: flex; flex-direction: column; margin: 0; }
+  .pd__facts div { display: flex; justify-content: space-between; gap: 1rem; padding: .7rem 0; border-top: 1px solid var(--line); font-size: .92rem; }
+  .pd__facts dt { color: var(--ink-3); }
+  .pd__facts dd { margin: 0; text-align: right; font-weight: 500; }
+  .pd__book { justify-content: center; }
+  .pd__call { text-align: center; font-size: .85rem; color: var(--ink-3); }
+
+  .it__head { display: flex; flex-direction: column; gap: 1rem; margin-bottom: clamp(2.5rem, 5vw, 4rem); }
+  .it__day { display: grid; grid-template-columns: 1fr; gap: .75rem; padding: 1.75rem 0; border-top: 1px solid var(--line); }
+  .it__day:last-child { border-bottom: 1px solid var(--line); }
+  .it__label { font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ocean); font-weight: 700; }
+  .it__text { font-size: 1.1rem; font-weight: 500; max-width: 60ch; }
+  .it__visits { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+  .it__visits li { font-size: .82rem; padding: .35rem .8rem; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); }
+
+  .stay__item { padding: 2.5rem 0; border-top: 1px solid var(--line-light); }
+  .stay__info { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start; }
+  .stay__where { font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--turquoise); font-weight: 700; }
+  .stay__note { color: rgba(255,255,255,.72); max-width: 40ch; }
+  .stay__amen { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .stay__amen li { font-size: .8rem; padding: .35rem .8rem; border: 1px solid var(--line-light); border-radius: 999px; color: rgba(255,255,255,.85); }
+  .stay__photos { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-top: 1.5rem; }
+  .stay__photos figure { margin: 0; }
+  .stay__photos img { aspect-ratio: 1; }
+
+  .pd-inc__grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
+  @media (min-width: 720px) { .pd-inc__grid { grid-template-columns: repeat(3, 1fr); gap: 3rem; } .it__day { grid-template-columns: 8rem 1fr; gap: 2rem; } }
+  @media (min-width: 960px) {
+    .pd__main { grid-column: 1 / 8; }
+    .pd__aside { grid-column: 9 / -1; margin-top: 0; position: sticky; top: calc(var(--nav-h) + 1.5rem); align-self: start; }
+    .stay__info { grid-column: 1 / 6; }
+    .stay__photos { grid-column: 7 / -1; margin-top: 0; grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
