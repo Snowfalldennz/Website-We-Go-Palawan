@@ -1,3 +1,14 @@
 [build]
   command = "npm run build"
   publish = "dist"
+
+# Everything Astro writes under /_astro/ (CSS, JS and every optimised photo) has
+# a content hash in its filename, so a given URL never changes and can be cached
+# for a year. Netlify's default (max-age=0, must-revalidate) makes the browser
+# re-check each of those files on every visit; this lets returning visitors skip
+# that. HTML and /video/ deliberately keep the default, so a redeploy or a
+# replaced hero video shows up straight away.
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

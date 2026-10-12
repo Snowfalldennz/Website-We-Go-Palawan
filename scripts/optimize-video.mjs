@@ -82,31 +82,55 @@ const PORTRAIT_CROP = 'crop=608:1080:656:0';
 const encode = (name, { filter, crf }) =>
   run(['-i', SRC, '-an', '-vf', filter, ...SCRUB, '-crf', String(crf), resolve(OUT, name)]);
 
-// Landscape, wide screens. Native resolution, no resampling at all.
-encode('hero-scrub.mp4', { filter: sharpen(0.4), crf: 26 });
+// `node scripts/optimize-video.mjs previews` re-encodes only the quick-start
+// files, so a tweak to them doesn't churn the large binaries in version control.
+const only = process.argv[2];
+const files = [];
 
-// Portrait phones. A native crop of the 1080p frame, so no upscale either.
-encode('hero-scrub-portrait.mp4', { filter: `${PORTRAIT_CROP},${sharpen(0.5)}`, crf: 26 });
+if (!only || only === 'full') {
+  // Landscape, wide screens. Native resolution, no resampling at all.
+  encode('hero-scrub.mp4', { filter: sharpen(0.4), crf: 26 });
 
-// Small landscape screens, e.g. a rotated phone. Kept light on data.
-encode('hero-scrub-landscape-sm.mp4', {
-  filter: `scale=1280:720:flags=lanczos,${sharpen(0.5)}`,
-  crf: 26,
-});
+  // Portrait phones. A native crop of the 1080p frame, so no upscale either.
+  encode('hero-scrub-portrait.mp4', { filter: `${PORTRAIT_CROP},${sharpen(0.5)}`, crf: 26 });
 
-// Posters, shown while the video loads. Same framing as the file that follows,
-// so there is no visible jump when the video takes over.
-run(['-ss', '0.2', '-i', SRC, '-frames:v', '1', '-vf', sharpen(0.4),
-  '-q:v', '3', resolve(OUT, 'hero-poster.jpg')]);
-run(['-ss', '0.2', '-i', SRC, '-frames:v', '1', '-vf', `${PORTRAIT_CROP},${sharpen(0.5)}`,
-  '-q:v', '3', resolve(OUT, 'hero-poster-portrait.jpg')]);
+  // Small landscape screens, e.g. a rotated phone. Kept light on data.
+  encode('hero-scrub-landscape-sm.mp4', {
+    filter: `scale=1280:720:flags=lanczos,${sharpen(0.5)}`,
+    crf: 26,
+  });
 
-for (const f of [
-  'hero-scrub.mp4',
-  'hero-scrub-portrait.mp4',
-  'hero-scrub-landscape-sm.mp4',
-  'hero-poster.jpg',
-  'hero-poster-portrait.jpg',
-]) {
+  // Posters, shown while the video loads. Same framing as the file that follows,
+  // so there is no visible jump when the video takes over.
+  run(['-ss', '0.2', '-i', SRC, '-frames:v', '1', '-vf', sharpen(0.4),
+    '-q:v', '3', resolve(OUT, 'hero-poster.jpg')]);
+  run(['-ss', '0.2', '-i', SRC, '-frames:v', '1', '-vf', `${PORTRAIT_CROP},${sharpen(0.5)}`,
+    '-q:v', '3', resolve(OUT, 'hero-poster-portrait.jpg')]);
+
+  files.push('hero-scrub.mp4', 'hero-scrub-portrait.mp4', 'hero-scrub-landscape-sm.mp4',
+    'hero-poster.jpg', 'hero-poster-portrait.jpg');
+}
+
+if (!only || only === 'previews') {
+  // Quick-start tier. The full files above are 14-36 MB, and the hero cannot
+  // scrub until one has finished downloading, so on a first visit (nothing
+  // cached) scrolling did nothing for seconds — and worked instantly on a
+  // reload, which is exactly the "it only works after I refresh" report.
+  // These are ~1.5-4 MB: small enough that scrubbing starts almost at once,
+  // then HeroScroll swaps to the sharp file when it has finished downloading
+  // in the background. Half the frame rate and resolution is invisible for the
+  // few seconds they are on screen; the keyframe interval stays ~0.27s
+  // (g=8 at 30fps) so seeking is just as responsive.
+  const PREVIEW = SCRUB.map((v, i) => (SCRUB[i - 1] === '-g' || SCRUB[i - 1] === '-keyint_min' ? '8' : v));
+  const preview = (name, filter) =>
+    run(['-i', SRC, '-an', '-vf', filter, ...PREVIEW, '-crf', '32', resolve(OUT, name)]);
+
+  preview('hero-preview.mp4', 'fps=30,scale=960:540:flags=lanczos,setsar=1');
+  preview('hero-preview-portrait.mp4', `${PORTRAIT_CROP},fps=30,scale=304:540:flags=lanczos,setsar=1`);
+
+  files.push('hero-preview.mp4', 'hero-preview-portrait.mp4');
+}
+
+for (const f of files) {
   console.log(f.padEnd(30), (statSync(resolve(OUT, f)).size / 1024 / 1024).toFixed(2), 'MB');
 }

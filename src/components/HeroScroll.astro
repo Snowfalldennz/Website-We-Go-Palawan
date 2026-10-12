@@ -45,6 +45,8 @@ const chapters = [
       data-src-landscape="/video/hero-scrub.mp4"
       data-src-landscape-sm="/video/hero-scrub-landscape-sm.mp4"
       data-src-portrait="/video/hero-scrub-portrait.mp4"
+      data-preview-landscape="/video/hero-preview.mp4"
+      data-preview-portrait="/video/hero-preview-portrait.mp4"
     ></video>
 
     <div class="hero__shade" aria-hidden="true"></div>
@@ -195,9 +197,14 @@ const chapters = [
 
   onPage(() => {
     const hero = document.querySelector<HTMLElement>('[data-hero]');
-    if (!hero || reducedMotion) return;
+    // Inner-page heroes (PageHero) carry data-hero too but have no video.
+    const first = hero?.querySelector<HTMLVideoElement>('video');
+    if (!hero || !first || reducedMotion) return;
 
-    const video = hero.querySelector<HTMLVideoElement>('video')!;
+    // `first` is the <video> in the markup. `video` is whichever element is
+    // currently on screen — they differ once the sharp file replaces the
+    // quick-start one (see "video loading" below).
+    let video = first;
     const poster = hero.querySelector<HTMLElement>('.hero__poster')!;
     const hint = hero.querySelector<HTMLElement>('[data-hero-hint]');
     const bar = hero.querySelector<HTMLElement>('[data-hero-progress]');
@@ -234,69 +241,153 @@ const chapters = [
     // that aspect the 9:16 cut would have to be stretched sideways, so wider
     // viewports take a landscape file instead.
     const PORTRAIT_MAX_ASPECT = 608 / 1080;
+    const isPortrait = () => window.innerWidth / window.innerHeight < PORTRAIT_MAX_ASPECT;
+    const srcs = first.dataset; // read once: `first` is removed from the page after the swap
     const pickSrc = () => {
-      const { innerWidth: w, innerHeight: h } = window;
-      const aspect = w / h;
-      if (aspect < PORTRAIT_MAX_ASPECT) return video.dataset.srcPortrait!;
-      if (aspect > 1 && w < 1000) return video.dataset.srcLandscapeSm!;
-      return video.dataset.srcLandscape!;
+      if (isPortrait()) return srcs.srcPortrait!;
+      if (window.innerWidth / window.innerHeight > 1 && window.innerWidth < 1000) return srcs.srcLandscapeSm!;
+      return srcs.srcLandscape!;
     };
+    const pickPreview = () => (isPortrait() ? srcs.previewPortrait! : srcs.previewLandscape!);
 
-    let loadedSrc = '';
-    let objectUrl = '';
-
-    // Fetch the whole file first so scrubbing never waits on the network,
-    // then hand it to the <video> as a blob URL.
-    const load = async (src: string) => {
-      if (src === loadedSrc) return;
-      loadedSrc = src;
-      const previous = objectUrl;
+    // The sharp files are 14-36 MB and the hero cannot scrub until a whole file
+    // is in memory, so on a first visit (nothing cached) scrolling did nothing
+    // for as long as that took — and then worked instantly after a reload. So
+    // there are two tiers: a ~1.5-4 MB quick-start file that gets scrubbing
+    // going within a second or two, and the sharp file, downloaded in the
+    // background and swapped in once it is complete. Each is fetched whole
+    // first, so scrubbing never waits on the network mid-scroll.
+    const aborter = new AbortController();
+    const fetchWhole = async (url: string, background = false): Promise<{ href: string; owned: boolean } | null> => {
       try {
-        const res = await fetch(src);
+        // `priority: 'low'` makes the big background download yield to the
+        // page's own images, CSS and scripts instead of competing with them.
+        const res = await fetch(url, { signal: aborter.signal, priority: background ? 'low' : 'auto' } as RequestInit);
         if (!res.ok) throw new Error(String(res.status));
-        const blob = await res.blob();
-        if (loadedSrc !== src) return; // a rotation overtook this load
-        objectUrl = URL.createObjectURL(blob);
-        video.src = objectUrl;
+        return { href: URL.createObjectURL(await res.blob()), owned: true };
       } catch {
-        // Network trouble: stream it directly instead.
-        objectUrl = '';
-        video.src = src;
-        video.preload = 'auto';
+        if (aborter.signal.aborted) return null; // navigated away mid-download
+        return { href: url, owned: false }; // network trouble: stream it directly instead
       }
-      video.load();
-      if (previous) URL.revokeObjectURL(previous);
     };
 
-    video.addEventListener('loadedmetadata', () => { duration = video.duration; });
-    video.addEventListener('loadeddata', async () => {
-      // iOS renders nothing until the element has "played" once.
-      try { await video.play(); video.pause(); } catch { /* fine */ }
-      video.currentTime = Math.max(0.001, current * duration);
-      ready = true;
-      if (!video.classList.contains('is-ready')) {
-        video.classList.add('is-ready');
-        poster.style.transition = 'opacity 1.2s';
-        setTimeout(() => (poster.style.opacity = '0'), 400);
-      }
-    });
-    video.addEventListener('seeked', () => {
-      const ms = performance.now() - seekStarted;
-      seekLatency = seekLatency ? seekLatency * 0.8 + ms * 0.2 : ms;
-    });
-    video.addEventListener('error', () => { ready = false; });
+    const ownedUrls = new Map<HTMLVideoElement, string>();
+    const release = (el: HTMLVideoElement) => {
+      const url = ownedUrls.get(el);
+      if (url) URL.revokeObjectURL(url);
+      ownedUrls.delete(el);
+    };
 
-    const loadBest = () => load(pickSrc());
-    if ('requestIdleCallback' in window) (window as any).requestIdleCallback(() => loadBest(), { timeout: 800 });
-    else setTimeout(loadBest, 120);
+    let token = 0; // bumped whenever a newer request supersedes pending ones
+    let shownRank = -1; // 0 = quick-start tier, 1 = sharp tier; never step back down
+    let posterHidden = false;
+    let loadedFull = ''; // the sharp file currently shown, or being fetched
+
+    const bind = (el: HTMLVideoElement) => {
+      el.addEventListener('seeked', () => {
+        if (el !== video) return;
+        const ms = performance.now() - seekStarted;
+        seekLatency = seekLatency ? seekLatency * 0.8 + ms * 0.2 : ms;
+      });
+      el.addEventListener('error', () => { if (el === video) ready = false; });
+    };
+
+    // Put `href` on screen at the frame the scroll position is asking for. The
+    // empty <video> from the markup takes the first file; later ones load into
+    // a second element stacked above it, and the old one is only removed after
+    // the new one is showing a frame, so the swap never flashes blank.
+    const present = (file: { href: string; owned: boolean }, forToken: number, rank: number) => {
+      const next = first.getAttribute('src') === null && video === first ? first : (first.cloneNode(false) as HTMLVideoElement);
+      if (next !== first) {
+        next.classList.remove('is-ready');
+        next.removeAttribute('src');
+        video.after(next);
+      }
+      next.muted = true; // content attributes don't mute a script-created element
+      next.preload = 'auto';
+      bind(next);
+      if (file.owned) ownedUrls.set(next, file.href);
+
+      const drop = () => {
+        if (next === first && next === video) { next.removeAttribute('src'); next.load(); }
+        else next.remove();
+        release(next);
+      };
+
+      next.addEventListener('loadeddata', async () => {
+        if (forToken !== token || rank < shownRank) return drop();
+        // iOS renders nothing until the element has "played" once.
+        try { await next.play(); next.pause(); } catch { /* fine */ }
+
+        let done = false;
+        const show = () => {
+          if (done) return;
+          done = true;
+          if (forToken !== token || rank < shownRank) return drop();
+          const previous = video;
+          video = next;
+          duration = next.duration;
+          ready = true;
+          shownRank = rank;
+          next.classList.add('is-ready');
+          if (previous !== next) {
+            // Let the new frame fade in over the old one before removing it.
+            window.setTimeout(() => { previous.remove(); release(previous); }, 1400);
+          }
+          if (!posterHidden) {
+            posterHidden = true;
+            poster.style.transition = 'opacity 1.2s';
+            setTimeout(() => (poster.style.opacity = '0'), 400);
+          }
+        };
+        next.addEventListener('seeked', show, { once: true });
+        window.setTimeout(show, 1500); // a stuck seek must not strand the old file on screen
+        next.currentTime = Math.max(0.001, current * next.duration);
+      }, { once: true });
+
+      next.src = file.href;
+    };
+
+    // Respect Data Saver and very slow connections: the quick-start file is
+    // already a working hero, and the sharp one is 14-36 MB they asked us not to spend.
+    const conn = (navigator as any).connection;
+    const frugal = !!conn && (conn.saveData === true || /2g/.test(conn.effectiveType ?? ''));
+
+    const startLoading = async () => {
+      const mine = ++token;
+      const wanted = pickSrc();
+      loadedFull = wanted;
+
+      const quick = await fetchWhole(pickPreview());
+      if (quick && mine === token) present(quick, mine, 0);
+      else if (quick?.owned) URL.revokeObjectURL(quick.href);
+
+      if (frugal) return;
+      const sharp = await fetchWhole(wanted, true);
+      if (sharp && mine === token) present(sharp, mine, 1);
+      else if (sharp?.owned) URL.revokeObjectURL(sharp.href);
+    };
+
+    startLoading();
 
     // Rotating the phone changes which cut fits. Swap only when the choice
     // actually differs, and keep the frame the scroll position is asking for.
     let rotateTimer = 0;
-    window.addEventListener('resize', () => {
+    const onResize = () => {
       clearTimeout(rotateTimer);
-      rotateTimer = window.setTimeout(loadBest, 250);
-    });
+      rotateTimer = window.setTimeout(async () => {
+        const wanted = pickSrc();
+        if (wanted === loadedFull) return;
+        loadedFull = wanted;
+        const mine = ++token;
+        // A data-saver visitor never gets the sharp tier, but still needs the
+        // quick-start cut that matches the new orientation.
+        const file = await fetchWhole(frugal ? pickPreview() : wanted, !frugal);
+        if (file && mine === token) present(file, mine, frugal ? 0 : 1);
+        else if (file?.owned) URL.revokeObjectURL(file.href);
+      }, 250);
+    };
+    window.addEventListener('resize', onResize);
 
     /* ---------- per-frame update ---------- */
     const SEEK_STEP = 1 / 30; // don't bother seeking for sub-frame differences
@@ -367,11 +458,15 @@ const chapters = [
     onLeave(() => {
       io.disconnect();
       gsap.ticker.remove(tick);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      window.removeEventListener('resize', onResize);
+      clearTimeout(rotateTimer);
+      token++; // anything still loading is now stale
+      aborter.abort(); // and there's no point finishing a 36 MB download for a page we've left
+      for (const el of [...ownedUrls.keys()]) release(el);
     });
 
     if (import.meta.env.DEV) {
-      (window as any).__hero = { get target() { return target; }, get current() { return current; }, get seekLatency() { return seekLatency; }, get ticks() { return ticks; }, video };
+      (window as any).__hero = { get target() { return target; }, get current() { return current; }, get seekLatency() { return seekLatency; }, get ticks() { return ticks; }, get video() { return video; } };
     }
   });
 </script>

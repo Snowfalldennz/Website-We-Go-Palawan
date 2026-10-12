@@ -30,10 +30,30 @@ export const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 /** True when Astro's view transition router is handling navigation. */
 const hasRouter = !!document.querySelector('meta[name="astro-view-transitions-enabled"]');
 
-/** Run `fn` for the current page, and again after every view transition. */
+/**
+ * Run `fn` for the current page, and again after every view transition.
+ *
+ * On the very first visit Astro's router only fires `astro:page-load` from the
+ * window `load` event, which waits for every image, the web font and anything
+ * else still in flight. On a cold cache that is seconds, and until it fired
+ * nothing was initialised — no scroll-driven hero, no reveals, no nav — so a
+ * first-time visitor saw a page that didn't respond to scrolling, while a
+ * reload (everything cached, `load` near-instant) worked fine. So the first
+ * page runs as soon as the DOM is ready instead, and each page's <body> is
+ * remembered so the later `astro:page-load` for that same page is a no-op
+ * rather than a second initialisation.
+ */
 export function onPage(fn: () => void) {
   if (hasRouter) {
-    document.addEventListener('astro:page-load', fn);
+    const done = new WeakSet<Element>();
+    const run = () => {
+      if (done.has(document.body)) return;
+      done.add(document.body);
+      fn();
+    };
+    document.addEventListener('astro:page-load', run);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
+    else run();
   } else if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fn, { once: true });
   } else {
@@ -167,48 +187,83 @@ function setupNav() {
 interface SplitRecord { el: HTMLElement; inners: HTMLElement[]; shown: boolean; }
 const splitRecords: SplitRecord[] = [];
 
-function setupSplits() {
-  document.querySelectorAll<HTMLElement>('[data-split]').forEach((el) => {
-    const record: SplitRecord = { el, inners: splitLines(el), shown: false };
-    splitRecords.push(record);
-    gsap.set(record.inners, { yPercent: 110 });
-    gsap.set(el, { opacity: 1 });
+/** Resolves once the headline fonts have arrived, or after `ms`, whichever is first. */
+function fontsSettled(ms = 700): Promise<unknown> {
+  if (!document.fonts) return Promise.resolve();
+  const loads = Promise.all(['500', '600'].map((w) => document.fonts.load(`${w} 1em Manrope`))).catch(() => {});
+  return Promise.race([loads, new Promise((resolve) => setTimeout(resolve, ms))]);
+}
 
-    const play = () => {
-      record.shown = true;
-      const tween = gsap.to(record.inners, {
-        yPercent: 0,
-        duration: 1.25,
-        ease: 'power3.out',
-        stagger: 0.08,
-        delay: parseFloat(el.dataset.splitDelay ?? '0'),
-      });
-      // Safety net. These lines start hidden behind their mask, so if the
-      // ticker is ever throttled hard enough that the tween does not finish
-      // (a backgrounded tab, a stalled compositor) the text would be left
-      // invisible. Never leave copy unreadable for the sake of an effect.
-      window.setTimeout(() => {
-        if (tween.progress() < 1) tween.progress(1);
-      }, 4000);
+function setupSplits() {
+  const body = document.body;
+
+  document.querySelectorAll<HTMLElement>('[data-split]').forEach((el) => {
+    const start = () => {
+      if (document.body !== body) return; // navigated away while waiting on the font
+
+      const record: SplitRecord = { el, inners: splitLines(el), shown: false };
+      splitRecords.push(record);
+      gsap.set(record.inners, { yPercent: 110 });
+      gsap.set(el, { opacity: 1 });
+
+      const play = () => {
+        record.shown = true;
+        const tween = gsap.to(record.inners, {
+          yPercent: 0,
+          duration: 1.25,
+          ease: 'power3.out',
+          stagger: 0.08,
+          delay: parseFloat(el.dataset.splitDelay ?? '0'),
+        });
+        // Safety net. These lines start hidden behind their mask, so if the
+        // ticker is ever throttled hard enough that the tween does not finish
+        // (a backgrounded tab, a stalled compositor) the text would be left
+        // invisible. Never leave copy unreadable for the sake of an effect.
+        window.setTimeout(() => {
+          if (tween.progress() < 1) tween.progress(1);
+        }, 4000);
+      };
+
+      if (el.dataset.split === 'load') play();
+      else ScrollTrigger.create({ trigger: el, start: 'top 88%', once: true, onEnter: play });
     };
 
-    if (el.dataset.split === 'load') play();
-    else ScrollTrigger.create({ trigger: el, start: 'top 88%', once: true, onEnter: play });
+    // The hero headline plays the moment the page arrives, and init now runs
+    // before the web font has necessarily loaded. Animating it in the fallback
+    // font and then having the letterforms change mid-animation is a visible
+    // flash on a first visit, so it waits (briefly, bounded) for the font. It
+    // stays invisible until then, and everything below the fold can split right
+    // away: it gets redone below if the font lands later.
+    if (el.dataset.split === 'load') fontsSettled().then(start);
+    else start();
   });
 }
 
 // Line breaks move when the window resizes, so the split has to be redone.
+function resplit() {
+  for (const record of splitRecords) {
+    record.inners = splitLines(record.el);
+    gsap.set(record.inners, { yPercent: record.shown ? 0 : 110 });
+  }
+  ScrollTrigger.refresh();
+}
+
+// This runs before the web font has necessarily arrived (see onPage), so
+// headlines may have been split into lines using the fallback font's metrics.
+// When a font finishes loading after that the line breaks differ, so redo the
+// split. `loadingdone` only fires if something actually loaded, so a returning
+// visitor with the font cached never pays for this.
+let fontResplitTimer = 0;
+document.fonts?.addEventListener('loadingdone', () => {
+  clearTimeout(fontResplitTimer);
+  fontResplitTimer = window.setTimeout(() => { if (splitRecords.length) resplit(); }, 100);
+});
+
 let resplitTimer = 0;
 window.addEventListener('resize', () => {
   if (!splitRecords.length) return;
   clearTimeout(resplitTimer);
-  resplitTimer = window.setTimeout(() => {
-    for (const record of splitRecords) {
-      record.inners = splitLines(record.el);
-      gsap.set(record.inners, { yPercent: record.shown ? 0 : 110 });
-    }
-    ScrollTrigger.refresh();
-  }, 250);
+  resplitTimer = window.setTimeout(resplit, 250);
 });
 
 /* ---------------- Reveals, parallax, scale ---------------- */
@@ -353,6 +408,7 @@ onPage(() => {
   setupBackground();
   // Pinned sections change page height as they initialise, so measure last.
   requestAnimationFrame(() => ScrollTrigger.refresh());
+
 });
 
 window.addEventListener('load', () => ScrollTrigger.refresh());
